@@ -1,0 +1,9 @@
+backend/src/main/java/com/stockdashboard/Server.java
+backend/src/main/java/com/stockdashboard/Server.class
+backend/src/main/java/com/stockdashboard/aquireSentiment.java
+backend/src/main/java/com/stockdashboard/aquireSentiment.class
+backend/src/main/java/com/stockdashboard/aquireURL.java
+backend/src/main/java/com/stockdashboard/aquireURL.class
+website/frontend/node_modules/
+data/
+.env
