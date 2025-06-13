@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <nav class="w-full bg-white shadow flex items-center justify-between px-6">
-      <img src="/Users/samavramov/stockdashboard/website/frontend/src/images/logo.png" alt="Stockify AI Logo"
+      <img src="/Users/samavramov/stockdashboard/frontend/src/images/logo.png" alt="Stockify AI Logo"
         class="h-20 sm:h-20 md:h-20 object-contain" />
       <div class="relative">
         <button @click="toggleDropdown" class="flex items-center space-x-2 focus:outline-none">

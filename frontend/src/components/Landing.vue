@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-white">
     <nav class="w-full bg-white shadow flex items-center justify-between px-4 sm:px-6 ">
       <img
-        src="/Users/samavramov/stockdashboard/website/frontend/src/images/logo.png"
+        src="/Users/samavramov/stockdashboard/frontend/src/images/logo.png"
         alt="Stockify AI Logo" class="h-20 sm:h-20 md:h-20 object-contain" />
       <div class="flex items-center space-x-2 sm:space-x-4">
         <button @click="goToLogin"

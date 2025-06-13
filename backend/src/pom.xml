@@ -58,7 +58,16 @@
   </dependencies>
 
   <build>
-    <sourceDirectory>backend/src</sourceDirectory>
+    <!--
+    Original: <sourceDirectory>backend/src</sourceDirectory>
+    Corrected:
+    If pom.xml is in 'backend/', then 'src/main/java' is the standard Maven source directory.
+    Your screenshot shows 'backend/src/main/stockdashboard', which implies 'java' is missing
+    in the path, or 'stockdashboard' is your root package under 'java'.
+    Assuming standard Maven structure where .java files are under src/main/java/com/...
+    and your pom.xml is in 'backend/', the relative path to source root is 'src/main/java'.
+    -->
+    <sourceDirectory>src/main/java</sourceDirectory>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -84,8 +93,11 @@
           </descriptorRefs>
           <archive>
             <manifest>
-              <mainClass>ServerMain</mainClass> <!-- update this if fully qualified class name
-              differs -->
+              <!--
+              Update mainClass to the fully qualified name of your Server class.
+              Based on your previous Server.java, it's com.stockdashboard.Server
+              -->
+              <mainClass>com.stockdashboard.Server</mainClass>
             </manifest>
           </archive>
         </configuration>

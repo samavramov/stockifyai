@@ -14,7 +14,15 @@
     "three": "^0.177.0",
     "vue": "^3.4.0",
     "vue-router": "^4.2.5",
-    "vuedraggable": "^4.1.0"
+    "vuedraggable": "^4.1.0",
+    "apexcharts": "^4.7.0", 
+    "cors": "^2.8.5",        
+    "express": "^5.1.0",     
+    "express-session": "^1.18.1",
+    "node-fetch": "^2.7.0",  
+    "passport": "^0.7.0",     
+    "passport-google-oauth20": "^2.0.0",
+    "vue3-apexcharts": "^1.8.0" 
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
