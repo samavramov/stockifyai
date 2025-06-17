@@ -11,7 +11,7 @@ import Home from './components/Home.vue'
 import StockDetail from './components/StockDetail.vue'
 import Following from './components/Following.vue'
 import Privacy from './components/Privacy.vue'
-import TOS from './components/TOS.Vue'
+import TOS from './components/TOS.vue'
 import Cookies from './components/Cookies.vue'
 import Stocks from './components/stocksChart.vue' // Assuming this is your "All Stocks" page with the table
 import Auth from './components/AuthSuccess.vue'
