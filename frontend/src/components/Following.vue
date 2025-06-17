@@ -1,6 +1,6 @@
 <template>
   <nav class="w-full bg-white shadow flex items-center justify-between px-6">
-    <img src="/Users/samavramov/stockdashboard/frontend/src/images/logo.png" alt="Stockify AI Logo"
+    <img src="../images/logo.png" alt="Stockify AI Logo"
       class="h-20 sm:h-20 md:h-20 object-contain" />
     <div class="text-right">
       <button @click="goBack"
