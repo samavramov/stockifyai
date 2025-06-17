@@ -10,25 +10,25 @@
     "start": "vite --host 0.0.0.0 --port 3000"
   },
   "dependencies": {
+    "apexcharts": "^4.7.0",
     "axios": "^1.8.4",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "node-fetch": "^2.7.0",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "three": "^0.177.0",
     "vue": "^3.4.0",
     "vue-router": "^4.2.5",
-    "vuedraggable": "^4.1.0",
-    "apexcharts": "^4.7.0", 
-    "cors": "^2.8.5",        
-    "express": "^5.1.0",     
-    "express-session": "^1.18.1",
-    "node-fetch": "^2.7.0",  
-    "passport": "^0.7.0",     
-    "passport-google-oauth20": "^2.0.0",
-    "vue3-apexcharts": "^1.8.0" 
+    "vue3-apexcharts": "^1.8.0",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
-    "vite": "^5.0.0"
+    "vite": "^6.3.5"
   }
 }
