@@ -299,44 +299,65 @@
 
 <script>
 import VueApexCharts from 'vue3-apexcharts';
-// 1. Import your entire api service
-import * as api from '../apiService.js';
 
 export default {
   name: 'Dashboard',
   components: {
-    apexchart: VueApexCharts,
+    apexchart: VueApexCharts
   },
   data() {
     return {
-      // 2. Data is simplified. No hardcoded URLs or stock lists.
-      // They will be populated from the API.
-      stocks: [], // Will hold all stock data from the API
-      followedStocks: [], // Will hold followed stock data from the API
-
-      // Component State
-      isLoading: true,
-      loadingError: null,
-      isAddingStock: false,
-      addStockError: null,
-      activeTab: 'all',
-      sortColumn: 'symbol', // Default sort
+      // General State
+      sortColumn: null,
       sortDirection: 'asc',
-      
-      // UI State
+      activeTab: 'all',
       showDropdown: false,
       showSortDropdown: false,
-      searchQuery: '',
-      showSuggestions: true,
-      
-      // User State
       userName: '',
       userEmail: '',
       userPicture: '',
+      base_url: import.meta.env.VITE_API_BASE_URL,
+      stocks: [
+        { symbol: 'AAPL', name: 'Apple Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'AMD', name: 'Advanced Micro Devices', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'AMZN', name: 'Amazon.com Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'AVGO', name: 'Broadcom Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'BA', name: 'Boeing Company', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'COIN', name: 'Coinbase Global Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'DIS', name: 'Walt Disney Co.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'GME', name: 'GameStop Corp.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'GOOGL', name: 'Alphabet Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'INTC', name: 'Intel Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'LCID', name: 'Lucid Group Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'META', name: 'Meta Platforms Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'MSFT', name: 'Microsoft Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'MU', name: 'Micron Technology Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'NFLX', name: 'Netflix Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'NVDA', name: 'NVIDIA Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'ORCL', name: 'Oracle Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'PLTR', name: 'Palantir Technologies', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'PYPL', name: 'PayPal Holdings Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'QCOM', name: 'Qualcomm Incorporated', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'RBLX', name: 'Roblox Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'SHOP', name: 'Shopify Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'SNAP', name: 'Snapchat Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'SOFI', name: 'SoFi Technologies Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'SPOT', name: 'Spotify Technology SA', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'TSLA', name: 'Tesla Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'UBER', name: 'Uber Technologies Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'WBD', name: 'Warner Bros. Discovery Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'ZOOM', name: 'Zoom Video Communications', dailySentiment: null, tenDayAverage: null, percentChange: null }
+      ],
+      searchQuery: '',
+      showSuggestions: true,
+      isAddingStock: false,
+      addStockError: null,
+      isLoading: true,
+      loadingError: null,
+      followedStocks: [],
     };
   },
   computed: {
-    // ... all your computed properties remain the same, they will react to the data changes ...
     sortedStocks() {
       if (!this.sortColumn) return this.stocks;
       return [...this.stocks].sort((a, b) => {
@@ -371,10 +392,8 @@ export default {
       return dates;
     },
     chartSeries() {
-      // Use the followed stocks list, but get full details from the main stocks list
-      const followedSymbols = this.followedStocks.map(f => f.symbol);
-      return this.stocks
-        .filter(stock => followedSymbols.includes(stock.symbol) && stock.lastTen && stock.lastTen.length)
+      return this.followedStocks
+        .filter(stock => stock.lastTen && stock.lastTen.length)
         .map(stock => ({
           name: stock.symbol,
           data: stock.lastTen.slice().reverse().map((value, idx) => ({
@@ -407,105 +426,35 @@ export default {
       );
     },
     followedStocksWithDetails() {
-      const followedSymbols = new Set(this.followedStocks.map(f => f.symbol));
-      return this.stocks.filter(stock => followedSymbols.has(stock.symbol));
+      // Ensure followedStocks has the necessary properties for isStockFollowed
+      return this.followedStocks.map(stock => {
+        const details = this.stocks.find(s => s.symbol === stock.symbol) || {};
+        return { ...details, ...stock };
+      });
     }
   },
-  // 3. A single, efficient initialization method in mounted()
   mounted() {
-    this.initializePageData();
+    this.loadUserData();
+    this.loadAllSentiments();
   },
   methods: {
-    // 4. All methods below now use the apiService, making them clean and readable
-    async initializePageData() {
-      this.isLoading = true;
-      try {
-        const sessionData = await api.checkAuthStatus();
-        if (!sessionData.user || !sessionData.user.email) {
-          throw new Error('User not authenticated.');
-        }
-        this.userEmail = sessionData.user.email;
-        this.userName = sessionData.user.name;
-        this.userPicture = sessionData.user.picture;
-
-        // Fetch all necessary data in parallel for speed
-        const [allSentiments, followedSymbols] = await Promise.all([
-          api.getAllSentiments(),
-          api.getFollowedSymbols(this.userEmail)
-        ]);
-
-        // Populate the main stocks list (single source of truth)
-        this.stocks = allSentiments.map(sentiment => ({
-          symbol: sentiment.stockSymbol,
-          name: sentiment.companyName,
-          dailySentiment: sentiment.sentimentValue,
-          tenDayAverage: sentiment.tenDayAverage,
-          percentChange: sentiment.percentChange,
-          lastTen: sentiment.lastTen || [],
-        }));
-
-        // Populate the list of followed stocks
-        this.followedStocks = followedSymbols.map(symbol => ({ symbol }));
-
-      } catch (err) {
-        console.error('Failed to initialize page data:', err);
-        this.$router.push('/login'); // Redirect to login if any part fails
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async handleFollow(symbol) {
-      // Stop row click navigation
-      const event = window.event; 
-      if (event) event.stopPropagation();
-
-      this.addStockError = null;
-      if (this.isStockFollowed(symbol)) return; // Already followed
-
-      this.isAddingStock = true;
-      try {
-        await api.followStock(this.userEmail, symbol);
-        this.followedStocks.push({ symbol }); // Optimistically update UI
-        this.searchQuery = ''; // Clear search
-      } catch (error) {
-        this.addStockError = `Error: ${error.message}`;
-      } finally {
-        this.isAddingStock = false;
-      }
-    },
-
-    async handleUnfollow(symbol) {
-      // Stop row click navigation
-      const event = window.event;
-      if (event) event.stopPropagation();
-      
-      try {
-        await api.unfollowStock(this.userEmail, symbol);
-        this.followedStocks = this.followedStocks.filter(s => s.symbol !== symbol); // Optimistically update UI
-      } catch (error) {
-        console.error(`Failed to unfollow ${symbol}:`, error);
-        alert(`Error unfollowing stock: ${error.message}`);
-      }
-    },
-    
-    async logout() {
-      this.closeAllDropdowns();
-      localStorage.clear();
-      sessionStorage.clear();
-      try {
-        await api.logoutUser();
-      } catch (err) {
-        console.error('Logout request failed:', err);
-      } finally {
-        // Fix: Corrected the redirect path from a git command typo
-        this.$router.push('/login'); 
-      }
-    },
-
-    // UI and Helper methods
+    // Helper to check if a stock is followed
     isStockFollowed(symbol) {
       return this.followedStocks.some(stock => stock.symbol === symbol);
+    },
+    toggleSortDropdown() {
+      this.showSortDropdown = !this.showSortDropdown;
+      if (this.showSortDropdown) {
+        this.showDropdown = false;
+      }
+    },
+    selectSort(column) {
+      this.sortTable(column);
+      this.showSortDropdown = false;
+    },
+    closeAllDropdowns() {
+      this.showDropdown = false;
+      this.showSortDropdown = false;
     },
     sortTable(column) {
       if (this.sortColumn === column) {
@@ -515,14 +464,196 @@ export default {
         this.sortDirection = 'asc';
       }
     },
-    toggleDropdown() { this.showDropdown = !this.showDropdown; if (this.showDropdown) this.showSortDropdown = false; },
-    toggleSortDropdown() { this.showSortDropdown = !this.showSortDropdown; if (this.showSortDropdown) this.showDropdown = false; },
-    closeAllDropdowns() { this.showDropdown = false; this.showSortDropdown = false; },
+    async loadUserData() {
+      try {
+        const sessionRes = await fetch(`${this.base_url}/me`, {
+          credentials: 'include'
+        });
+        if (!sessionRes.ok) {
+          throw new Error('Not authenticated');
+        }
+
+        const sessionData = await sessionRes.json();
+        console.log('Session data from /me:', sessionData);
+
+        if (!sessionData.user || !sessionData.user.email) {
+          throw new Error('No user object or email found in session data');
+        }
+
+        this.userEmail = sessionData.user.email;
+        this.userName = sessionData.user.name;
+        this.userPicture = sessionData.user.picture;
+        await this.loadFollowedStocksData();
+      } catch (err) {
+        console.error('Failed to load user data:', err);
+        this.$router.push('/login');
+      }
+    },
+    async logout() {
+      this.closeAllDropdowns();
+      localStorage.clear();
+      sessionStorage.clear();
+
+      try {
+        const response = await fetch(`${this.base_url}/logout`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          console.error('Server-side logout failed:', response.statusText);
+        }
+      } catch (err) {
+        console.error('Network error during logout request:', err);
+      } finally {
+        this.$router.push('/git remote -v');
+      }
+    },
+    toggleDropdown() {
+      this.showDropdown = !this.showDropdown;
+      if (this.showDropdown) {
+        this.showSortDropdown = false;
+      }
+    },
     goToFollowingPage() { this.$router.push(`/following`); this.closeAllDropdowns(); },
     goToStockDetail(symbol) { this.$router.push(`/stock/${symbol}`); },
     sentimentClass(value) { return value >= 0 ? 'text-green-600' : 'text-red-600'; },
-    onInputChange() { this.addStockError = null; this.showSuggestions = true; },
-    selectStock(symbol) { this.searchQuery = symbol; this.showSuggestions = false; },
+    async loadAllSentiments() {
+      try {
+        const response = await fetch(`${this.base_url}/api/sentiments`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const allSentiments = await response.json();
+        allSentiments.forEach(item => {
+          const idx = this.stocks.findIndex(s => s.symbol === item.stockSymbol);
+          if (idx !== -1) {
+            this.stocks[idx].dailySentiment = item.sentimentValue;
+            this.stocks[idx].tenDayAverage = item.tenDayAverage;
+            this.stocks[idx].percentChange = item.percentChange;
+            this.stocks[idx].name = item.companyName || this.stocks[idx].name;
+          }
+        });
+      } catch (err) {
+        console.error('Failed to load all sentiments:', err);
+      }
+    },
+    onInputChange() {
+      this.addStockError = null;
+      this.showSuggestions = true;
+    },
+    selectStock(symbol) {
+      this.searchQuery = symbol;
+      this.showSuggestions = false;
+    },
+    async loadFollowedStocksData() {
+      if (!this.userEmail) return;
+      this.isLoading = true;
+      this.loadingError = null;
+      try {
+        const symbolsResponse = await fetch(`${this.base_url}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
+        if (!symbolsResponse.ok) throw new Error(`HTTP ${symbolsResponse.status}`);
+        const followedSymbols = await symbolsResponse.json();
+
+        const sentimentsResponse = await fetch(`${this.base_url}/api/sentiments`);
+        if (!sentimentsResponse.ok) throw new Error(`HTTP ${sentimentsResponse.status}`);
+        const allSentiments = await sentimentsResponse.json();
+
+        // Populate followedStocks with details and mark as followed
+        this.followedStocks = followedSymbols.map(symbol => {
+          const stockData = allSentiments.find(s => s.stockSymbol === symbol);
+          return stockData ? {
+            symbol: stockData.stockSymbol,
+            name: stockData.companyName,
+            sentimentValue: stockData.sentimentValue,
+            lastTen: stockData.lastTen || [],
+          } : { symbol, name: 'Data not found', sentimentValue: null, lastTen: [] };
+        });
+
+      } catch (error) {
+        this.loadingError = `Failed to load followed stocks. ${error.message}`;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async addStockFromAll(symbol) { // New method for adding from 'all stocks' table
+      const event = window.event; // Get the event object
+      if (event) {
+        event.stopPropagation(); // Stop propagation to prevent row click
+      }
+      this.addStockError = null;
+      if (!this.userEmail) {
+        this.addStockError = 'Please log in to follow stocks.';
+        return;
+      }
+
+      if (this.isStockFollowed(symbol)) {
+        this.addStockError = `${symbol} is already followed.`;
+        return;
+      }
+
+      this.isAddingStock = true;
+      try {
+        const response = await fetch(`${this.base_url}/api/followStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+        await this.loadFollowedStocksData(); // Reload followed stocks to update button state
+      } catch (error) {
+        this.addStockError = `Error following stock: ${error.message}`;
+      } finally {
+        this.isAddingStock = false;
+      }
+    },
+    async addStockFromInput() { // Renamed from addStock to differentiate
+      this.addStockError = null;
+      const symbol = this.searchQuery.trim().toUpperCase();
+      if (!symbol) return;
+      if (!this.stocks.some(s => s.symbol === symbol)) {
+        this.addStockError = `${symbol} is not a valid stock symbol.`; return;
+      }
+      if (this.isStockFollowed(symbol)) { // Use new helper
+        this.addStockError = `${symbol} is already followed.`; return;
+      }
+
+      this.isAddingStock = true;
+      try {
+        const response = await fetch(`${this.base_url}/api/followStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+        await this.loadFollowedStocksData();
+        this.searchQuery = '';
+      } catch (error) {
+        this.addStockError = `Error following stock: ${error.message}`;
+      } finally {
+        this.isAddingStock = false;
+        this.showSuggestions = false;
+      }
+    },
+    async removeStock(symbol) {
+      const event = window.event; // Get the event object
+      if (event) {
+        event.stopPropagation(); // Stop propagation to prevent row click
+      }
+      try {
+        const response = await fetch(`${this.base_url}/api/unfollowStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
+        await this.loadFollowedStocksData();
+      } catch (error) {
+        console.error("Failed to remove stock:", error);
+        alert(`Error: ${error.message}`);
+      }
+    },
   }
 };
 </script>

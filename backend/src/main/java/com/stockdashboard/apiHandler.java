@@ -264,7 +264,6 @@ public class apiHandler implements HttpHandler {
         // *** THIS IS THE KEY CHANGE ***
         // It now uses the variable loaded from your .env file
         exchange.getResponseHeaders().add("Access-Control-Allow-Origin", this.frontendUrl);
-        
         exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
         exchange.getResponseHeaders().add("Access-Control-Allow-Credentials", "true");

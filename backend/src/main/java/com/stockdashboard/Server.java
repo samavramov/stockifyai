@@ -1,4 +1,5 @@
 package com.stockdashboard;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.Headers;
@@ -35,8 +36,8 @@ public class Server {
 
         try {
             dotenv = Dotenv.configure()
-                           .directory("backend")
-                           .load();
+                    .directory("backend")
+                    .load();
         } catch (io.github.cdimascio.dotenv.DotenvException e) {
             System.err.println("Error loading .env file: " + e.getMessage());
             System.err.println("Please ensure backend/.env exists and is properly formatted.");
@@ -46,14 +47,14 @@ public class Server {
             backendURL = System.getenv("BACKEND_URL");
             frontendURL = System.getenv("FRONTEND_URL");
         }
-        
+
         if (dotenv != null) {
             clientId = dotenv.get("GOOGLE_CLIENT_ID");
             clientSecret = dotenv.get("GOOGLE_CLIENT_SECRET");
             backendURL = dotenv.get("BACKEND_URL");
             frontendURL = dotenv.get("FRONTEND_URL"); // Load from .env
         }
-        
+
         GOOGLE_CLIENT_ID = clientId;
         GOOGLE_CLIENT_SECRET = clientSecret;
         BACKEND_URL = backendURL;
@@ -61,10 +62,11 @@ public class Server {
 
         // Critical check for all required environment variables
         if (GOOGLE_CLIENT_ID == null || GOOGLE_CLIENT_SECRET == null || BACKEND_URL == null || FRONTEND_URL == null) {
-            System.err.println("CRITICAL ERROR: One or more environment variables are missing (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, BACKEND_URL, FRONTEND_URL). Please set them in your .env file or system environment. Exiting.");
+            System.err.println(
+                    "CRITICAL ERROR: One or more environment variables are missing (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, BACKEND_URL, FRONTEND_URL). Please set them in your .env file or system environment. Exiting.");
             System.exit(1);
         }
-        
+
         System.out.println("Google Client ID loaded successfully.");
         System.out.println("Backend URL loaded successfully: " + BACKEND_URL);
         System.out.println("Frontend URL loaded successfully: " + FRONTEND_URL); // Confirm load
@@ -103,14 +105,15 @@ public class Server {
             try {
                 if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                     // *** Use FRONTEND_URL for CORS headers ***
-                    addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS", "Content-Type, Authorization");
+                    addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS",
+                            "Content-Type, Authorization");
                     exchange.sendResponseHeaders(204, -1);
                     exchange.close();
                     return;
                 }
                 String query = exchange.getRequestURI().getQuery();
                 String code = null;
-                if (query != null) { 
+                if (query != null) {
                     for (String param : query.split("&")) {
                         if (param.startsWith("code=")) {
                             code = param.split("=")[1];
@@ -141,7 +144,8 @@ public class Server {
                 JsonObject tokenJson = JsonParser.parseString(tokenResponse.body()).getAsJsonObject();
 
                 if (!tokenJson.has("access_token")) {
-                    System.err.println("Error: Access token not received from Google. Response: " + tokenResponse.body());
+                    System.err
+                            .println("Error: Access token not received from Google. Response: " + tokenResponse.body());
                     exchange.sendResponseHeaders(401, -1);
                     exchange.close();
                     return;
@@ -188,7 +192,8 @@ public class Server {
                     }
                 });
 
-                exchange.getResponseHeaders().add("Set-Cookie", "sessionId=" + sessionToken + "; Path=/; HttpOnly; SameSite=Lax");
+                exchange.getResponseHeaders().add("Set-Cookie",
+                        "sessionId=" + sessionToken + "; Path=/; HttpOnly; SameSite=Lax");
                 // *** Use FRONTEND_URL for the final redirect ***
                 exchange.getResponseHeaders().add("Location", FRONTEND_URL + "/home");
                 exchange.sendResponseHeaders(302, -1);
@@ -203,18 +208,20 @@ public class Server {
 
         server.createContext("/logout", exchange -> {
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                 // *** Use FRONTEND_URL for CORS headers ***
-                addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS", "Content-Type, Authorization");
+                // *** Use FRONTEND_URL for CORS headers ***
+                addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS",
+                        "Content-Type, Authorization");
                 exchange.sendResponseHeaders(204, -1);
                 exchange.close();
                 return;
             }
-             // *** Use FRONTEND_URL for CORS headers ***
+            // *** Use FRONTEND_URL for CORS headers ***
             addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET", "Content-Type");
             String sessionId = getCookieValue(exchange.getRequestHeaders(), "sessionId");
             if (sessionId != null) {
-                activeSessions.remove(sessionId); 
-                exchange.getResponseHeaders().add("Set-Cookie", "sessionId=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax");
+                activeSessions.remove(sessionId);
+                exchange.getResponseHeaders().add("Set-Cookie",
+                        "sessionId=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax");
                 System.out.println("Session " + sessionId + " invalidated.");
             } else {
                 System.out.println("Logout request received, but no sessionId found.");
@@ -225,13 +232,14 @@ public class Server {
 
         server.createContext("/me", exchange -> {
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                 // *** Use FRONTEND_URL for CORS headers ***
-                addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS", "Content-Type, Authorization");
-                exchange.sendResponseHeaders(204, -1); 
+                // *** Use FRONTEND_URL for CORS headers ***
+                addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS",
+                        "Content-Type, Authorization");
+                exchange.sendResponseHeaders(204, -1);
                 exchange.close();
                 return;
             }
-             // *** Use FRONTEND_URL for CORS headers ***
+            // *** Use FRONTEND_URL for CORS headers ***
             addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET", "Content-Type, Authorization");
             String sessionId = getCookieValue(exchange.getRequestHeaders(), "sessionId");
             if (sessionId != null && activeSessions.containsKey(sessionId)) {
@@ -243,27 +251,61 @@ public class Server {
                     os.write(response.getBytes());
                 }
             } else {
-                exchange.sendResponseHeaders(401, -1); 
+                exchange.sendResponseHeaders(401, -1);
             }
             exchange.close();
         });
 
         server.createContext("/", exchange -> {
             if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(405, -1);
+                exchange.sendResponseHeaders(405, -1); // Method Not Allowed
                 exchange.close();
                 return;
             }
+
             try {
-                byte[] bytes = Files.readAllBytes(Paths.get("website/frontend/index.html"));
-                exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                // Define the root directory for your built frontend files
+                final String root = "website/frontend/dist";
+                URI uri = exchange.getRequestURI();
+                String path = uri.getPath().equals("/") ? "/index.html" : uri.getPath();
+
+                // Construct the full path to the requested file
+                String filePath = root + path;
+
+                // Basic security check to prevent path traversal attacks
+                if (filePath.contains("..")) {
+                    exchange.sendResponseHeaders(400, -1); // Bad Request
+                    exchange.close();
+                    return;
+                }
+
+                byte[] bytes = Files.readAllBytes(Paths.get(filePath));
+
+                // Determine the correct Content-Type based on file extension
+                Headers headers = exchange.getResponseHeaders();
+                if (filePath.endsWith(".html")) {
+                    headers.set("Content-Type", "text/html; charset=UTF-8");
+                } else if (filePath.endsWith(".js")) {
+                    headers.set("Content-Type", "application/javascript");
+                } else if (filePath.endsWith(".css")) {
+                    headers.set("Content-Type", "text/css");
+                } else if (filePath.endsWith(".png")) {
+                    headers.set("Content-Type", "image/png");
+                } // Add more types as needed (e.g., .jpg, .svg, .ico)
+
                 exchange.sendResponseHeaders(200, bytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(bytes);
                 }
             } catch (IOException e) {
-                System.err.println("Error serving index.html: " + e.getMessage());
-                exchange.sendResponseHeaders(404, -1);
+                // This will catch file not found errors
+                System.err.println("Error serving static file: " + e.getMessage());
+                String response = "404 (Not Found)\n";
+                exchange.sendResponseHeaders(404, response.length());
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+            } finally {
                 exchange.close();
             }
         });
@@ -278,7 +320,7 @@ public class Server {
         headers.add("Access-Control-Allow-Origin", origin);
         headers.add("Access-Control-Allow-Methods", methods);
         headers.add("Access-Control-Allow-Headers", allowedHeaders);
-        headers.add("Access-Control-Allow-Credentials", "true"); 
+        headers.add("Access-Control-Allow-Credentials", "true");
     }
 
     private static String getCookieValue(Headers headers, String cookieName) {

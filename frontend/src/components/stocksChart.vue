@@ -340,7 +340,8 @@ export default {
   },
   mounted() {
     this.loadUserData();
-    this.loadAllSentiments();
+    this.loadAllSentiments(); 
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   },
   methods: {
     goToLogin() {
@@ -348,7 +349,7 @@ export default {
     },
     async loadUserData() {
       try {
-        const sessionRes = await fetch(`${this.API_BASE_URL}/me`, {
+        const sessionRes = await fetch(`${apiBaseUrl}/me`, {
           credentials: 'include'
         });
         if (!sessionRes.ok) {
@@ -378,7 +379,7 @@ export default {
       localStorage.clear();
       sessionStorage.clear();
       try {
-        const response = await fetch(`${this.API_BASE_URL}/logout`, { method: 'GET', credentials: 'include' });
+        const response = await fetch(`${apiBaseUrl}/logout`, { method: 'GET', credentials: 'include' });
         if (!response.ok) {
           console.error('Server-side logout failed:', response.statusText);
         }
@@ -395,7 +396,7 @@ export default {
     sentimentClass(value) { return value >= 0 ? 'text-green-600' : 'text-red-600'; },
     async loadAllSentiments() {
       try {
-        const response = await fetch(`${this.API_BASE_URL}/sentiments`);
+        const response = await fetch(`${this.API_BASE_URL}/api/sentiments`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const allSentiments = await response.json();
         allSentiments.forEach(item => {
@@ -428,11 +429,11 @@ export default {
       this.isLoading = true;
       this.loadingError = null;
       try {
-        const symbolsResponse = await fetch(`${this.API_BASE_URL}/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
+        const symbolsResponse = await fetch(`${this.API_BASE_URL}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
         if (!symbolsResponse.ok) throw new Error(`HTTP ${symbolsResponse.status}`);
         const followedSymbols = await symbolsResponse.json();
 
-        const sentimentsResponse = await fetch(`${this.API_BASE_URL}/sentiments`);
+        const sentimentsResponse = await fetch(`${this.API_BASE_URL}/api/sentiments`);
         if (!sentimentsResponse.ok) throw new Error(`HTTP ${sentimentsResponse.status}`);
         const allSentiments = await sentimentsResponse.json();
 
@@ -464,7 +465,7 @@ export default {
       }
       this.isAddingStock = true;
       try {
-        const response = await fetch(`${this.API_BASE_URL}/followStock`, {
+        const response = await fetch(`${this.API_BASE_URL}/api/followStock`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -482,7 +483,7 @@ export default {
     },
     async removeStock(symbol) {
       try {
-        const response = await fetch(`${this.API_BASE_URL}/unfollowStock`, {
+        const response = await fetch(`${this.API_BASE_URL}/api/unfollowStock`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

@@ -203,10 +203,8 @@
 </template>
 
 <script>
-import VueApexCharts from 'vue3-apexcharts';
-import draggable from 'vuedraggable';
-// 1. Import all functions from the apiService
-import * as api from '../apiService.js';
+import VueApexCharts from 'vue3-apexcharts'
+import draggable from 'vuedraggable' // Import draggable
 
 export default {
   data() {
@@ -219,13 +217,12 @@ export default {
       isLoading: true,
       loadingError: null,
       followedStocks: [],
-      originalFollowedStocksOrder: [],
+      originalFollowedStocksOrder: [], // To store the initial order
       userEmail: localStorage.getItem('userEmail') || '',
       userName: localStorage.getItem('userName') || '',
       userPicture: localStorage.getItem('userPicture') || '',
-      showSortDropdown: false,
-      // 2. No more hardcoded API_BASE_URL in data()!
-      // List of stocks that users are allowed to follow.
+      API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+      showSortDropdown: false, // New data property for dropdown visibility
       allowedStocks: [
         { symbol: 'AAPL', name: 'Apple Inc.' },
         { symbol: 'QCOM', name: 'Qualcomm Incorporated' },
@@ -256,21 +253,23 @@ export default {
         { symbol: 'AVGO', name: 'Broadcom Inc.' },
         { symbol: 'UBER', name: 'Uber Technologies Inc.' },
         { symbol: 'ZOOM', name: 'Zoom Video Communications' }
-      ],
+      ]
     };
   },
-  components: {
+  components:
+  {
     apexchart: VueApexCharts,
     draggable,
   },
-  // ... your computed properties remain the same ...
   computed: {
     sortedFollowedStocks() {
+      // This computed property will now sort based on the criteria for the top row display
       return [...this.followedStocks]
         .filter(stock => stock.percentChange !== null)
         .sort((a, b) => Math.abs(b.percentChange) - Math.abs(a.percentChange));
     },
     barChartSeries() {
+      // Ensure the bar chart series data is derived from the *currently sorted* followedStocks
       return [{
         name: 'Daily Sentiment',
         data: this.followedStocks.map(stock => ({
@@ -282,17 +281,42 @@ export default {
     barChartOptions() {
       const today = this.date;
       return {
-        chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true } },
-        plotOptions: { bar: { distributed: true, borderRadius: 4, horizontal: false, } },
+        chart: {
+          type: 'bar',
+          toolbar: { show: false },
+          animations: { enabled: true }
+        },
+        plotOptions: {
+          bar: {
+            distributed: true,
+            borderRadius: 4,
+            horizontal: false,
+          }
+        },
+        // Ensure colors correspond to the sorted stock symbols
         colors: this.followedStocks.map(stock => {
           const value = stock.sentimentValue ?? 0;
           if (value > 0.05) return '#16a34a';
           if (value < -0.05) return '#dc2626';
           return '#6b7280';
         }),
-        xaxis: { categories: this.followedStocks.map(stock => stock.symbol), title: { text: 'Stock Symbols' } },
-        yaxis: { min: -1, max: 1, title: { text: `Score For ${today.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` } },
-        legend: { show: false },
+        xaxis: {
+          // Ensure categories correspond to the sorted stock symbols
+          categories: this.followedStocks.map(stock => stock.symbol),
+          title: {
+            text: 'Stock Symbols'
+          }
+        },
+        yaxis: {
+          min: -1,
+          max: 1,
+          title: {
+            text: `Score For ${today.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+          }
+        },
+        legend: {
+          show: false
+        },
       };
     },
     lastTenDates() {
@@ -321,7 +345,11 @@ export default {
     },
     chartOptions() {
       return {
-        chart: { id: 'sentiment-line-chart', toolbar: { show: false }, animations: { easing: 'easeinout', speed: 400 } },
+        chart: {
+          id: 'sentiment-line-chart',
+          toolbar: { show: false },
+          animations: { easing: 'easeinout', speed: 400 }
+        },
         xaxis: {
           title: { text: 'Date' },
           labels: {
@@ -332,10 +360,21 @@ export default {
             }
           }
         },
-        yaxis: { min: -1, max: 1, title: { text: 'Sentiment' } },
-        stroke: { curve: 'smooth' },
-        tooltip: { enabled: 'true' },
-        legend: { position: 'bottom' }
+        yaxis: {
+          min: -1,
+          max: 1,
+          title: { text: 'Sentiment' }
+        },
+        stroke: {
+          curve: 'smooth'
+        },
+        tooltip: {
+          enabled: 'true'
+
+        },
+        legend: {
+          position: 'bottom'
+        }
       };
     },
     filteredStocks() {
@@ -362,25 +401,43 @@ export default {
     } else {
       await this.loadUserData();
     }
+    // Close dropdown if clicked outside
     document.addEventListener('click', this.closeSortDropdownOnClickOutside);
   },
   beforeUnmount() {
     document.removeEventListener('click', this.closeSortDropdownOnClickOutside);
   },
+
   methods: {
-    // 3. All methods below are now refactored to use the apiService.
+    selectSort(column) {
+      this.sortTable(column);
+      this.showSortDropdown = false;
+    },
     async loadFollowedStocksData() {
       this.isLoading = true;
       this.loadingError = null;
+
       try {
-        // Use Promise.all to fetch symbols and sentiments concurrently for speed
-        const [followedSymbols, allSentiments] = await Promise.all([
-          api.getFollowedSymbols(this.userEmail),
-          api.getAllSentiments()
-        ]);
+        const symbolsResponse = await fetch(
+          `${this.API_BASE_URL}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`
+        );
+
+        if (!symbolsResponse.ok) {
+          throw new Error(`Failed to get followed stocks: ${symbolsResponse.status}`);
+        }
+
+        const followedSymbols = await symbolsResponse.json();
+
+        const sentimentsResponse = await fetch(`${this.API_BASE_URL}/api/sentiments`);
+        if (!sentimentsResponse.ok) {
+          throw new Error(`Failed to get sentiments: ${sentimentsResponse.status}`);
+        }
+
+        const allSentiments = await sentimentsResponse.json();
 
         this.followedStocks = followedSymbols.map(symbol => {
           const stockData = allSentiments.find(s => s.stockSymbol === symbol);
+
           return stockData ? {
             symbol: stockData.stockSymbol,
             name: stockData.companyName || this.getStockName(symbol) || 'N/A',
@@ -397,7 +454,10 @@ export default {
             lastTen: [],
           };
         });
+
+        // Store the initial order
         this.originalFollowedStocksOrder = [...this.followedStocks];
+
       } catch (error) {
         console.error("Failed to load followed stocks data:", error);
         this.loadingError = `Failed to load data. Please try again. (${error.message})`;
@@ -406,66 +466,7 @@ export default {
         this.isLoading = false;
       }
     },
-    async loadUserData() {
-      try {
-        const sessionData = await api.checkAuthStatus(); // Uses the /me endpoint
-        if (sessionData.user && sessionData.user.email) {
-          this.userEmail = sessionData.user.email;
-          localStorage.setItem('userEmail', this.userEmail);
 
-          const userData = await api.getUserData(this.userEmail);
-          this.userName = userData.name;
-          localStorage.setItem('userName', userData.name);
-          this.userPicture = userData.picture;
-          localStorage.setItem('userPicture', userData.picture);
-          
-          await this.loadFollowedStocksData();
-        } else {
-           throw new Error("No user data in session");
-        }
-      } catch (err) {
-        console.error('Failed to load user data:', err);
-        this.$router.push('/login');
-      }
-    },
-    async addStock() {
-      this.addStockError = null;
-      const symbol = this.searchQuery.trim().toUpperCase();
-      if (!symbol || !this.allowedStocks.some(s => s.symbol === symbol)) {
-        this.addStockError = `${symbol || 'Selection'} is not a valid stock symbol.`;
-        return;
-      }
-      if (this.followedStocks.some(s => s.symbol === symbol)) {
-        this.addStockError = `${symbol} is already in your followed list.`;
-        return;
-      }
-
-      this.isAddingStock = true;
-      try {
-        await api.followStock(this.userEmail, symbol);
-        await this.loadFollowedStocksData(); // Reload all data to ensure consistency
-        this.searchQuery = '';
-      } catch (error) {
-        this.addStockError = `Error following stock: ${error.message}`;
-      } finally {
-        this.isAddingStock = false;
-      }
-    },
-    async removeStock(symbol) {
-      try {
-        await api.unfollowStock(this.userEmail, symbol);
-        this.followedStocks = this.followedStocks.filter(s => s.symbol !== symbol);
-        this.originalFollowedStocksOrder = [...this.followedStocks];
-      } catch (error) {
-        console.error("Failed to remove stock:", error);
-        // Optionally show an error message to the user
-      }
-    },
-    // ... Other UI methods like onDragEnd, goBack, etc. remain the same ...
-    selectSort(column) {
-      this.sortTable(column);
-      this.showSortDropdown = false;
-    },
     getStockName(symbol) {
       const stock = this.allowedStocks.find(s => s.symbol === symbol);
       return stock ? stock.name : null;
@@ -478,14 +479,124 @@ export default {
       this.searchQuery = symbol;
       this.showSuggestions = false;
     },
+    async loadUserData() {
+      try {
+        const sessionRes = await fetch(`${this.API_BASE_URL}/me`, {
+          credentials: 'include'
+        });
+
+        if (!sessionRes.ok) throw new Error(`Session error: ${sessionRes.status}`);
+
+        const sessionData = await sessionRes.json();
+
+        if (sessionData.user && sessionData.user.email) {
+          this.userEmail = sessionData.user.email;
+          localStorage.setItem('userEmail', this.userEmail);
+
+          const res = await fetch(`${this.API_BASE_URL}/api/getUser?email=${encodeURIComponent(this.userEmail)}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+          const data = await res.json();
+          this.userName = data.name;
+          localStorage.setItem('userName', data.name);
+          this.userPicture = data.picture;
+          localStorage.setItem('userPicture', data.picture);
+        }
+
+        await this.loadFollowedStocksData();
+      } catch (err) {
+        console.error('Failed to load user data:', err);
+        this.$router.push('/login');
+      }
+    },
+    async addStock() {
+      this.addStockError = null;
+      const symbol = this.searchQuery.trim().toUpperCase();
+
+      if (!symbol) {
+        this.addStockError = "Please enter a stock symbol.";
+        return;
+      }
+
+      const isValid = this.allowedStocks.some(s => s.symbol === symbol);
+      if (!isValid) {
+        this.addStockError = `${symbol} is not a valid stock symbol.`;
+        return;
+      }
+
+      if (this.followedStocks.some(s => s.symbol === symbol)) {
+        this.addStockError = `${symbol} is already in your followed list.`;
+        return;
+      }
+
+      this.isAddingStock = true;
+      try {
+        const followResponse = await fetch(`${this.API_BASE_URL}/api/followStock`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: this.userEmail,
+            stockSymbol: symbol
+          })
+        });
+
+        if (!followResponse.ok) {
+          throw new Error(`Failed to follow stock: ${followResponse.status}`);
+        }
+
+        // After successfully following, reload ALL followed stocks data to ensure
+        // that the newly added stock, as well as existing ones, have their latest data.
+        await this.loadFollowedStocksData();
+
+        this.searchQuery = '';
+      } catch (error) {
+        this.addStockError = `Error following stock: ${error.message}`;
+      } finally {
+        this.isAddingStock = false;
+      }
+    },
+    async removeStock(symbol) {
+      try {
+        const response = await fetch(`${this.API_BASE_URL}/api/unfollowStock`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: this.userEmail,
+            stockSymbol: symbol
+          })
+        });
+
+        if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
+        this.followedStocks = this.followedStocks.filter(s => s.symbol !== symbol);
+        this.originalFollowedStocksOrder = [...this.followedStocks]; // Update original order
+      } catch (error) {
+        console.error("Failed to remove stock:", error);
+      }
+    },
     onDragEnd(event) {
       console.log('New order of stocks:', this.followedStocks.map(s => s.symbol));
+      // Optionally save the new order to your backend here
+      // this.saveStockOrder(this.followedStocks.map(s => s.symbol));
     },
+
     goBack() {
       if (this.$router) this.$router.push('/home');
+      else {
+        console.warn("Vue Router not found. Cannot navigate to /home");
+        alert("Back functionality requires Vue Router.");
+      }
     },
     goToStockDetail(symbol) {
       if (this.$router) this.$router.push(`/stock/${symbol}`);
+      else console.warn("Vue Router not found. Cannot navigate to stock detail.");
     },
     sentimentClass(value) {
       if (value === null) return '';
@@ -495,8 +606,10 @@ export default {
       this.showSortDropdown = !this.showSortDropdown;
     },
     closeSortDropdownOnClickOutside(event) {
+      // Check if the click occurred outside the dropdown button and the dropdown content
       const sortButton = this.$el.querySelector('.relative.lg\\:col-span-1 > button');
-      const sortDropdown = this.$el.querySelector('.origin-top-right.absolute');
+      const sortDropdown = this.$el.querySelector('.origin-top-right.absolute.right-0.mt-2.w-48.rounded-md.shadow-lg.bg-white.ring-1.ring-black.ring-opacity-5.z-50');
+
       if (this.showSortDropdown && sortButton && sortDropdown &&
         !sortButton.contains(event.target) && !sortDropdown.contains(event.target)) {
         this.showSortDropdown = false;
@@ -504,24 +617,31 @@ export default {
     },
     sortTable(criteria) {
       let stocksToSort = [...this.followedStocks];
+
       stocksToSort.sort((a, b) => {
         let valA, valB;
+
         switch (criteria) {
-          case 'symbol': return a.symbol.localeCompare(b.symbol);
-          case 'name': return a.name.localeCompare(b.name);
+          case 'symbol':
+            return a.symbol.localeCompare(b.symbol);
+          case 'name':
+            return a.name.localeCompare(b.name);
           case 'dailySentiment':
-            valA = a.sentimentValue ?? -Infinity;
+            valA = a.sentimentValue ?? -Infinity; // Treat null as very low for sorting
             valB = b.sentimentValue ?? -Infinity;
-            return valB - valA;
+            return valB - valA; // Descending
           case 'tenDayAverage':
             valA = a.tenDayAverage ?? -Infinity;
             valB = b.tenDayAverage ?? -Infinity;
-            return valB - valA;
+            return valB - valA; // Descending
           case 'percentChange':
             valA = a.percentChange ?? -Infinity;
             valB = b.percentChange ?? -Infinity;
-            return valB - valA;
-          default: return 0;
+            return valB - valA; // Descending
+          default:
+            // If no specific criteria, revert to the original order (if stored)
+            // Or maintain current order if original order isn't explicitly managed for this case
+            return 0;
         }
       });
       this.followedStocks = stocksToSort;
