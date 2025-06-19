@@ -12,17 +12,62 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import org.postgresql.util.PGobject;
+import io.github.cdimascio.dotenv.Dotenv; // Import the Dotenv library
 
 public class databaseInteractions {
-    private static final String DB_URL = "jdbc:postgresql://localhost:5432/user";
-    private static final String DB_USER = "user";
-    private static final String DB_PASSWORD = "pass";
+
+    // Declare final variables to hold the credentials
+    private static final String DB_URL;
+    private static final String DB_USER;
+    private static final String DB_PASSWORD;
+
+    /**
+     * Static initializer block. This code runs once when the class is loaded.
+     * It's responsible for loading the database credentials from the .env file.
+     */
+    static {
+        Dotenv dotenv = null;
+        String dbUrl = null;
+        String dbUser = null;
+        String dbPassword = null;
+
+        try {
+            // Assumes .env file is in the 'backend' directory relative to execution path
+            dotenv = Dotenv.configure().directory("backend").load();
+        } catch (io.github.cdimascio.dotenv.DotenvException e) {
+            System.err.println("Error loading .env file: " + e.getMessage());
+            System.err.println("Attempting to fall back to system environment variables for DB credentials.");
+        }
+
+        if (dotenv != null) {
+            dbUrl = dotenv.get("DB_URL");
+            dbUser = dotenv.get("DB_USER");
+            dbPassword = dotenv.get("DB_PASSWORD");
+        }
+        
+        // If .env loading failed or vars weren't in it, try loading from system environment
+        if (dbUrl == null) dbUrl = System.getenv("DB_URL");
+        if (dbUser == null) dbUser = System.getenv("DB_USER");
+        if (dbPassword == null) dbPassword = System.getenv("DB_PASSWORD");
+
+
+        DB_URL = dbUrl;
+        DB_USER = dbUser;
+        DB_PASSWORD = dbPassword;
+
+        // Critical check to ensure database variables are set
+        if (DB_URL == null || DB_USER == null || DB_PASSWORD == null) {
+            System.err.println("CRITICAL ERROR: Database environment variables (DB_URL, DB_USER, DB_PASSWORD) are not set. Please define them in your .env file or system environment. Exiting.");
+            System.exit(1);
+        }
+    }
 
     public void deleteOldSentiments() {
         String sql = "DELETE FROM Stocks WHERE SentimentTimestamp < ?";
         LocalDateTime cutoffDateTime = LocalDateTime.now().minusDays(11);
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        // Use the consistent getConnection() method
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             Timestamp cutoffTimestamp = Timestamp.valueOf(cutoffDateTime);
             pstmt.setTimestamp(1, cutoffTimestamp);
             int deletedRows = pstmt.executeUpdate();
@@ -43,8 +88,9 @@ public class databaseInteractions {
                 "LLMAnalysis TEXT," +
                 "PRIMARY KEY (StockSymbol, SentimentTimestamp)" +
                 ");";
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-                Statement stmt = conn.createStatement()) {
+        // Use the consistent getConnection() method
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
 
             stmt.execute(sql);
             System.out.println("Schema initialized successfully.");
@@ -54,6 +100,7 @@ public class databaseInteractions {
         }
     }
 
+    // This method now uses the static final variables loaded from .env
     private Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
     }

@@ -183,10 +183,11 @@
     </div>
   </footer>
 </template>
-
 <script>
 import Gauge from './Gauge.vue';
 import ApexCharts from 'vue3-apexcharts';
+// 1. Import your entire api service
+import * as api from '../apiService.js';
 
 export default {
   name: 'StockDetail',
@@ -198,10 +199,10 @@ export default {
   data() {
     return {
       userEmail: localStorage.getItem('userEmail') || '',
-      API_BASE_URL: 'http://localhost:8001/api',
+      // 2. Removed hardcoded API_BASE_URL
       isFollowed: false,
-      isFollowing: false,
-      stockData: {
+      isFollowing: false, // Prevents double-clicking follow/unfollow
+      stockData: { // Holds dynamic sentiment data from the API
         stockSymbol: '',
         companyName: '',
         sentimentValue: 0,
@@ -216,6 +217,7 @@ export default {
       },
       activeChart: 'average',
       showAIModal: false,
+      // The static data about each stock remains here for now
       stocks: [
         {
           symbol: 'AAPL',
@@ -482,6 +484,7 @@ export default {
     };
   },
   computed: {
+    // ... all your computed properties remain the same ...
     currentStock() {
       return this.stocks.find(stock => stock.symbol === this.symbol) || null;
     },
@@ -497,125 +500,39 @@ export default {
         return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
       });
       return {
-        chart: {
-          id: 'last-ten-sentiment-chart',
-          toolbar: { show: false },
-          zoom: { enabled: false }
-        },
+        chart: { id: 'last-ten-sentiment-chart', toolbar: { show: false }, zoom: { enabled: false } },
         colors: ['#543ade'],
-        xaxis: {
-          categories,
-          title: { text: 'Date' },
-          labels: { align: 'center' }
-        },
-        yaxis: {
-          min: -1,
-          max: 1,
-          tickAmount: 4,
-          title: { text: 'Sentiment Value' }
-        },
+        xaxis: { categories, title: { text: 'Date' }, labels: { align: 'center' } },
+        yaxis: { min: -1, max: 1, tickAmount: 4, title: { text: 'Sentiment Value' } },
         stroke: { curve: 'smooth' },
         markers: { size: 4 },
-        tooltip: {
-          x: { show: false },
-          y: { formatter: val => val.toFixed(2) }
-        }
+        tooltip: { x: { show: false }, y: { formatter: val => val.toFixed(2) } }
       };
     }
   },
+  // 3. Combined data loading into a single efficient method
   mounted() {
-    this.loadStockData();
-    this.checkIfFollowed();
+    this.initializeComponentData();
   },
   watch: {
+    // Reload data if the user navigates from one stock detail page to another
     symbol() {
-      this.loadStockData();
+      this.initializeComponentData();
     }
   },
   methods: {
-    async checkIfFollowed() {
-      const userEmail = localStorage.getItem('userEmail');
-      if (!userEmail) {
-        this.isFollowed = false;
-        return;
-      }
+    // 4. All API calls now use the apiService
+    async initializeComponentData() {
       try {
-        const response = await fetch(
-          `${this.API_BASE_URL}/getFollowedStocks?email=${encodeURIComponent(userEmail)}`
-        );
-      } catch (error) {
-        console.error('Error checking followed status:', error);
-      }
-    },
+        // Fetch sentiment data and followed status in parallel for better performance
+        const [allSentiments, followedSymbols] = await Promise.all([
+          api.getAllSentiments(),
+          this.userEmail ? api.getFollowedSymbols(this.userEmail) : Promise.resolve([])
+        ]);
 
-    async toggleFollowStock() {
-      const userEmail = localStorage.getItem('userEmail');
-      if (!userEmail) {
-        alert('Please log in to follow stocks');
-        this.$router.push('/login'); // Redirect to login
-        return;
-      }
-      if (this.isFollowing) return;
-
-      this.isFollowing = true;
-      try {
-        if (this.isFollowed) {
-          await this.unfollowStock();
-        } else {
-          await this.followStock();
-        }
-      } catch (error) {
-        console.error('Error toggling follow status:', error);
-      } finally {
-        this.isFollowing = false;
-      }
-    },
-
-    async followStock() {
-      const userEmail = localStorage.getItem('userEmail');
-      if (!userEmail) return;
-      const response = await fetch(`${this.API_BASE_URL}/followStock`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: this.userEmail,
-          stockSymbol: this.symbol
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to follow stock');
-
-      this.isFollowed = true;
-    },
-
-    async unfollowStock() {
-      const response = await fetch(`${this.API_BASE_URL}/unfollowStock`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: this.userEmail,
-          stockSymbol: this.symbol
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to unfollow stock');
-
-      this.isFollowed = false;
-    },
-    async loadStockData() {
-      try {
-        const res = await fetch('http://localhost:8001/api/sentiments');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const all = await res.json();
-        const found = all.find(o => o.stockSymbol === this.symbol);
-
+        // Process sentiment data
+        const found = allSentiments.find(o => o.stockSymbol === this.symbol);
         if (found) {
-          const extractUrl = (urlString) => {
-            if (!urlString || typeof urlString !== 'string') return '';
-            const parts = urlString.split(/:\s*(.*)/s);
-            return parts[1] || '';
-          };
-
           this.stockData = {
             stockSymbol: found.stockSymbol,
             companyName: found.companyName || 'Unknown Company',
@@ -623,21 +540,51 @@ export default {
             tenDayAverage: found.tenDayAverage ?? null,
             percentChange: found.percentChange ?? null,
             sentimentTimestamp: found.sentimentTimestamp || null,
-            url1: extractUrl(found.url1),
-            url2: extractUrl(found.url2),
-            url3: extractUrl(found.url3),
+            url1: found.url1 || '',
+            url2: found.url2 || '',
+            url3: found.url3 || '',
             llmAnalysis: found.llmAnalysis || '',
             lastTen: Array.isArray(found.lastTen) ? found.lastTen : []
           };
-        } else {
-          this.stockData.lastTen = [];
         }
-      } catch (e) {
-        console.error(e);
-        this.stockData.lastTen = [];
+
+        // Process followed status
+        this.isFollowed = followedSymbols.some(s => s === this.symbol);
+
+      } catch (error) {
+        console.error("Failed to load stock detail data:", error);
+        // Optionally, show an error state in the UI
       }
     },
+    
+    async toggleFollowStock() {
+      if (!this.userEmail) {
+        alert('Please log in to follow stocks');
+        this.$router.push('/login');
+        return;
+      }
+      if (this.isFollowing) return; // Prevent multiple clicks
+
+      this.isFollowing = true;
+      try {
+        if (this.isFollowed) {
+          await api.unfollowStock(this.userEmail, this.symbol);
+          this.isFollowed = false; // Optimistically update UI
+        } else {
+          await api.followStock(this.userEmail, this.symbol);
+          this.isFollowed = true; // Optimistically update UI
+        }
+      } catch (error) {
+        console.error('Error toggling follow status:', error);
+        alert(`Error: ${error.message}`);
+      } finally {
+        this.isFollowing = false;
+      }
+    },
+    
+    // UI Helper methods
     sentimentClass(v) {
+      if (v === null || v === undefined) return 'text-gray-400';
       return v >= 0 ? 'text-green-600' : 'text-red-600';
     },
     toggleChart() {
@@ -647,7 +594,8 @@ export default {
       this.$router.go(-1);
     },
     formatEmployees(employees) {
-      const num = employees.replace(/,/g, '');
+      if (!employees) return 'N/A';
+      const num = String(employees).replace(/,/g, '');
       return parseInt(num).toLocaleString();
     }
   }

@@ -21,10 +21,10 @@
               alt="Google logo" />
             Login / Create Account
           </button>
-          <a href="http://localhost:3000/stocks"
+          <router-link to="/stocks"
             class="w-full max-w-xs flex items-center justify-center bg-white text-gray-700 py-3 px-4 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
             Continue Without an Account
-          </a>
+          </router-link>
           <div class="mt-6 text-center">
             <button type="button" @click="goBack"
               class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 inline-flex items-center gap-2">
@@ -99,58 +99,51 @@
     </div>
   </div>
   <footer class="bg-gray-900 text-white py-8 md:py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h3 class="font-merriweather text-xl md:text-2xl font-bold mb-3 md:mb-4">stockify.ai</h3>
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h3 class="font-merriweather text-xl md:text-2xl font-bold mb-3 md:mb-4">stockify.ai</h3>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p class="text-gray-400 text-sm md:text-base mb-2 md:mb-3">
-            Advanced stock sentiment analysis for smarter investment decisions.
-          </p>
-          <div class="flex flex-col md:flex-row items-center justify-center gap-2">
-            <router-link to="/terms" class="text-gray-400 hover:underline text-xs md:text-sm">
-              Terms of Service
-            </router-link>
-            <span class="hidden md:block mx-2 text-gray-400"> | </span>
-            <router-link to="/privacy" class="text-gray-400 hover:underline text-xs md:text-sm">
-              Privacy Policy
-            </router-link>
-            <span class="hidden md:block mx-2 text-gray-400"> | </span>
-            <router-link to="/cookies" class="text-gray-400 hover:underline text-xs md:text-sm">
-              Cookie Policy
-            </router-link>
-          </div>
-        </div>
-        <p class="text-gray-400 text-xs md:text-sm mt-2 md:mt-3">
-          Contact us at
-          <a href="mailto:stockify.ai.inquries@gmail.com"
-            class="text-royalpurple-500 underline">stockify.ai.inquries@gmail.com</a>
+        <p class="text-gray-400 text-sm md:text-base mb-2 md:mb-3">
+          Advanced stock sentiment analysis for smarter investment decisions.
         </p>
+        <div class="flex flex-col md:flex-row items-center justify-center gap-2">
+          <router-link to="/terms" class="text-gray-400 hover:underline text-xs md:text-sm">
+            Terms of Service
+          </router-link>
+          <span class="hidden md:block mx-2 text-gray-400"> | </span>
+          <router-link to="/privacy" class="text-gray-400 hover:underline text-xs md:text-sm">
+            Privacy Policy
+          </router-link>
+          <span class="hidden md:block mx-2 text-gray-400"> | </span>
+          <router-link to="/cookies" class="text-gray-400 hover:underline text-xs md:text-sm">
+            Cookie Policy
+          </router-link>
+        </div>
       </div>
-    </footer>
+      <p class="text-gray-400 text-xs md:text-sm mt-2 md:mt-3">
+        Contact us at
+        <a href="mailto:stockify.ai.inquries@gmail.com"
+          class="text-royalpurple-500 underline">stockify.ai.inquries@gmail.com</a>
+      </p>
+    </div>
+  </footer>
 </template>
 
 <script>
+// 1. Import the base URL from your central API service
+import { API_BASE_URL } from '../apiService.js';
+
 export default {
   name: 'Login',
-  data() {
-    return {
-      email: '',
-      password: ''
-    }
-  },
+  // 2. The unused data for email/password has been removed.
   methods: {
-    handleLogin() {
-      if (this.email && this.password) {
-        this.$router.push('/home')
-      }
-    },
     goBack() {
-      this.$router.push('/')
+      this.$router.push('/');
     },
     async loginWithGoogle() {
       this.clearAllLocalData();
-      window.location.href = 'http://localhost:8001/auth/google';
+      // 3. The backend URL is now dynamic, pulled from your .env file!
+      window.location.href = `${API_BASE_URL}/auth/google`;
     },
-
     clearAllLocalData() {
       localStorage.clear();
       sessionStorage.clear();

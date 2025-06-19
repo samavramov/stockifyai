@@ -1,12 +1,9 @@
 package com.stockdashboard;
-
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpServer;
-
 import io.github.cdimascio.dotenv.Dotenv; // Import the Dotenv library
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -26,10 +23,16 @@ public class Server {
     private static final Map<String, JsonObject> activeSessions = new ConcurrentHashMap<>();
     private static final String GOOGLE_CLIENT_ID;
     private static final String GOOGLE_CLIENT_SECRET;
+    private static final String BACKEND_URL;
+    private static final String FRONTEND_URL; // Declare FRONTEND_URL
+
     static {
         Dotenv dotenv = null;
         String clientId = null;
         String clientSecret = null;
+        String backendURL = null;
+        String frontendURL = null; // Initialize here
+
         try {
             dotenv = Dotenv.configure()
                            .directory("backend")
@@ -37,44 +40,54 @@ public class Server {
         } catch (io.github.cdimascio.dotenv.DotenvException e) {
             System.err.println("Error loading .env file: " + e.getMessage());
             System.err.println("Please ensure backend/.env exists and is properly formatted.");
+            // Fallback to system environment variables if .env is not found
             clientId = System.getenv("GOOGLE_CLIENT_ID");
             clientSecret = System.getenv("GOOGLE_CLIENT_SECRET");
-            if (clientId == null || clientSecret == null) {
-                System.err.println("CRITICAL ERROR: Google Client ID and/or Secret are not set in .env or as system environment variables. Exiting.");
-                System.exit(1); 
-            }
+            backendURL = System.getenv("BACKEND_URL");
+            frontendURL = System.getenv("FRONTEND_URL");
         }
+        
         if (dotenv != null) {
             clientId = dotenv.get("GOOGLE_CLIENT_ID");
             clientSecret = dotenv.get("GOOGLE_CLIENT_SECRET");
+            backendURL = dotenv.get("BACKEND_URL");
+            frontendURL = dotenv.get("FRONTEND_URL"); // Load from .env
         }
         
         GOOGLE_CLIENT_ID = clientId;
         GOOGLE_CLIENT_SECRET = clientSecret;
-        if (GOOGLE_CLIENT_ID == null || GOOGLE_CLIENT_SECRET == null) {
-            System.err.println("CRITICAL ERROR: Google Client ID and/or Secret environment variables are missing. Please set them in your .env file or system environment. Exiting.");
-            System.exit(1); 
-            System.out.println("Google Client ID loaded successfully.");
+        BACKEND_URL = backendURL;
+        FRONTEND_URL = frontendURL; // Assign the loaded value
+
+        // Critical check for all required environment variables
+        if (GOOGLE_CLIENT_ID == null || GOOGLE_CLIENT_SECRET == null || BACKEND_URL == null || FRONTEND_URL == null) {
+            System.err.println("CRITICAL ERROR: One or more environment variables are missing (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, BACKEND_URL, FRONTEND_URL). Please set them in your .env file or system environment. Exiting.");
+            System.exit(1);
         }
+        
+        System.out.println("Google Client ID loaded successfully.");
+        System.out.println("Backend URL loaded successfully: " + BACKEND_URL);
+        System.out.println("Frontend URL loaded successfully: " + FRONTEND_URL); // Confirm load
     }
 
     public static void main(String[] args) throws IOException {
-        int port = 8001;
+        int port = 8001; // This port is for the *backend server*
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         ExecutorService threadPool = Executors.newFixedThreadPool(10);
         server.setExecutor(threadPool);
-        apiHandler apiHandler = new apiHandler();
+        apiHandler apiHandler = new apiHandler(FRONTEND_URL);
         server.createContext("/api/sentiments", apiHandler);
         server.createContext("/api/saveUser", apiHandler);
         server.createContext("/api/getUser", apiHandler);
         server.createContext("/api/followStock", apiHandler);
         server.createContext("/api/getFollowedStocks", apiHandler);
         server.createContext("/api/unfollowStock", apiHandler);
+
         server.createContext("/auth/google", exchange -> {
             String state = UUID.randomUUID().toString();
             String redirectUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
-                    "client_id=" + GOOGLE_CLIENT_ID + // Use the loaded ID
-                    "&redirect_uri=http://localhost:" + port + "/auth/google/callback" +
+                    "client_id=" + GOOGLE_CLIENT_ID +
+                    "&redirect_uri=" + BACKEND_URL + "/auth/google/callback" +
                     "&response_type=code" +
                     "&scope=profile%20email" +
                     "&access_type=offline" +
@@ -85,10 +98,12 @@ public class Server {
             exchange.sendResponseHeaders(302, -1);
             exchange.close();
         });
+
         server.createContext("/auth/google/callback", exchange -> {
             try {
                 if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                    addCorsHeaders(exchange.getResponseHeaders(), "http://localhost:3000", "GET, POST, OPTIONS", "Content-Type, Authorization");
+                    // *** Use FRONTEND_URL for CORS headers ***
+                    addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS", "Content-Type, Authorization");
                     exchange.sendResponseHeaders(204, -1);
                     exchange.close();
                     return;
@@ -110,9 +125,9 @@ public class Server {
                     return;
                 }
                 String tokenRequestBody = "code=" + code +
-                        "&client_id=" + GOOGLE_CLIENT_ID + // Use the loaded ID
-                        "&client_secret=" + GOOGLE_CLIENT_SECRET + // Use the loaded secret
-                        "&redirect_uri=http://localhost:" + port + "/auth/google/callback" +
+                        "&client_id=" + GOOGLE_CLIENT_ID +
+                        "&client_secret=" + GOOGLE_CLIENT_SECRET +
+                        "&redirect_uri=" + BACKEND_URL + "/auth/google/callback" +
                         "&grant_type=authorization_code";
 
                 HttpClient client = HttpClient.newHttpClient();
@@ -147,7 +162,6 @@ public class Server {
                 String name = userJson.has("name") ? userJson.get("name").getAsString() : "Unknown User";
                 String picture = userJson.has("picture") ? userJson.get("picture").getAsString() : "";
 
-                // Create a session for the user
                 String sessionToken = UUID.randomUUID().toString();
                 JsonObject sessionUser = new JsonObject();
                 sessionUser.addProperty("email", email);
@@ -163,7 +177,7 @@ public class Server {
                         saveUserJson.addProperty("picture", picture);
 
                         HttpRequest saveUserRequest = HttpRequest.newBuilder()
-                                .uri(URI.create("http://localhost:" + port + "/api/saveUser"))
+                                .uri(URI.create(BACKEND_URL + "/api/saveUser"))
                                 .header("Content-Type", "application/json")
                                 .POST(HttpRequest.BodyPublishers.ofString(saveUserJson.toString()))
                                 .build();
@@ -175,7 +189,8 @@ public class Server {
                 });
 
                 exchange.getResponseHeaders().add("Set-Cookie", "sessionId=" + sessionToken + "; Path=/; HttpOnly; SameSite=Lax");
-                exchange.getResponseHeaders().add("Location", "http://localhost:3000/home");
+                // *** Use FRONTEND_URL for the final redirect ***
+                exchange.getResponseHeaders().add("Location", FRONTEND_URL + "/home");
                 exchange.sendResponseHeaders(302, -1);
                 exchange.close();
             } catch (Exception e) {
@@ -185,14 +200,17 @@ public class Server {
                 exchange.close();
             }
         });
+
         server.createContext("/logout", exchange -> {
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                addCorsHeaders(exchange.getResponseHeaders(), "http://localhost:3000", "GET, POST, OPTIONS", "Content-Type, Authorization");
+                 // *** Use FRONTEND_URL for CORS headers ***
+                addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS", "Content-Type, Authorization");
                 exchange.sendResponseHeaders(204, -1);
                 exchange.close();
                 return;
             }
-            addCorsHeaders(exchange.getResponseHeaders(), "http://localhost:3000", "GET", "Content-Type"); // GET method for logout
+             // *** Use FRONTEND_URL for CORS headers ***
+            addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET", "Content-Type");
             String sessionId = getCookieValue(exchange.getRequestHeaders(), "sessionId");
             if (sessionId != null) {
                 activeSessions.remove(sessionId); 
@@ -204,15 +222,17 @@ public class Server {
             exchange.sendResponseHeaders(200, -1);
             exchange.close();
         });
+
         server.createContext("/me", exchange -> {
-            // CORS Preflight handling
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                addCorsHeaders(exchange.getResponseHeaders(), "http://localhost:3000", "GET, POST, OPTIONS", "Content-Type, Authorization");
+                 // *** Use FRONTEND_URL for CORS headers ***
+                addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS", "Content-Type, Authorization");
                 exchange.sendResponseHeaders(204, -1); 
                 exchange.close();
                 return;
             }
-            addCorsHeaders(exchange.getResponseHeaders(), "http://localhost:3000", "GET", "Content-Type, Authorization");
+             // *** Use FRONTEND_URL for CORS headers ***
+            addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET", "Content-Type, Authorization");
             String sessionId = getCookieValue(exchange.getRequestHeaders(), "sessionId");
             if (sessionId != null && activeSessions.containsKey(sessionId)) {
                 JsonObject user = activeSessions.get(sessionId);
@@ -247,17 +267,20 @@ public class Server {
                 exchange.close();
             }
         });
+
         server.start();
-        System.out.println("Server started: http://localhost:" + port);
+        System.out.println("Server started on port " + port + ". Backend is configured at: " + BACKEND_URL);
         databaseInteractions db = new databaseInteractions();
         System.out.println("Database connection test: " + (db.testConnection() ? "SUCCESS" : "FAILURE"));
     }
+
     private static void addCorsHeaders(Headers headers, String origin, String methods, String allowedHeaders) {
         headers.add("Access-Control-Allow-Origin", origin);
         headers.add("Access-Control-Allow-Methods", methods);
         headers.add("Access-Control-Allow-Headers", allowedHeaders);
         headers.add("Access-Control-Allow-Credentials", "true"); 
     }
+
     private static String getCookieValue(Headers headers, String cookieName) {
         String cookieHeader = headers.getFirst("Cookie");
         if (cookieHeader != null) {

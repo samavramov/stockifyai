@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URLDecoder;
@@ -14,6 +13,9 @@ import java.util.ArrayList;
 
 public class apiHandler implements HttpHandler {
 
+    private final String frontendUrl; // To store the configured frontend URL
+
+    // List of stocks to process
     private static final String[] SYMBOLS = {
             "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA",
             "META", "NVDA", "NFLX", "CRM", "ORCL",
@@ -22,6 +24,14 @@ public class apiHandler implements HttpHandler {
             "SHOP", "ROKU", "PINS", "DOCU", "PLTR",
             "COIN", "HOOD", "RBLX", "U", "DDOG"
     };
+
+    /**
+     * Constructor to accept dependencies like the frontend URL.
+     * @param frontendUrl The allowed origin for CORS requests.
+     */
+    public apiHandler(String frontendUrl) {
+        this.frontendUrl = frontendUrl;
+    }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -33,7 +43,6 @@ public class apiHandler implements HttpHandler {
             return;
         }
 
-        // Routes handling POST requests first
         if ("POST".equalsIgnoreCase(method)) {
             switch (path) {
                 case "/api/saveUser":
@@ -51,7 +60,6 @@ public class apiHandler implements HttpHandler {
             }
         }
 
-        // Routes handling GET requests
         if ("GET".equalsIgnoreCase(method)) {
             switch (path) {
                 case "/api/getUser":
@@ -61,20 +69,15 @@ public class apiHandler implements HttpHandler {
                     handleGetFollowedStocks(exchange);
                     return;
                 default:
-                    // Handle main sentiment data for all other GET requests (like / or /api/)
                     handleGetSentiments(exchange);
                     return;
             }
         }
 
-        // If method is not GET or POST or OPTIONS, reject
         sendMethodNotAllowed(exchange);
     }
-
-    private void sendMethodNotAllowed(HttpExchange exchange) throws IOException {
-        exchange.sendResponseHeaders(405, -1);
-        exchange.close();
-    }
+    
+    // --- Request Handling Methods ---
 
     private void handleGetSentiments(HttpExchange exchange) throws IOException {
         databaseInteractions db = new databaseInteractions();
@@ -97,7 +100,7 @@ public class apiHandler implements HttpHandler {
                 }
 
                 if (recent[0] != null && recent[1] != null) {
-                    percentChange = (((recent[0]) - (recent[1]))/2.0)*100.0;
+                    percentChange = (((recent[0]) - (recent[1])) / 2.0) * 100.0;
                 }
 
                 double averageSentiment = sum / lastTen.size();
@@ -110,7 +113,7 @@ public class apiHandler implements HttpHandler {
         }
 
         String json = toJsonArray(sentiments);
-        setCorsHeaders(exchange);
+        setCorsHeaders(exchange); // This now uses the environment variable
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
 
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
@@ -119,32 +122,23 @@ public class apiHandler implements HttpHandler {
             os.write(bytes);
         }
     }
-
+    
     public void handleGetUser(HttpExchange exchange) throws IOException {
         String email = getQueryParam(exchange.getRequestURI().getQuery(), "email");
-
         if (email == null || email.isEmpty()) {
             sendJsonError(exchange, 400, "Missing email parameter");
             return;
         }
-
         databaseInteractions db = new databaseInteractions();
         User user = db.getUserByEmail(email);
-
         if (user == null) {
             sendJsonError(exchange, 404, "User not found");
             return;
         }
-
-        String responseJson = String.format(
-                "{\"email\": \"%s\", \"name\": \"%s\", \"picture\": \"%s\"}",
-                escapeJson(user.email),
-                escapeJson(user.name),
-                escapeJson(user.picture));
-
+        String responseJson = String.format("{\"email\":\"%s\",\"name\":\"%s\",\"picture\":\"%s\"}",
+            escapeJson(user.email), escapeJson(user.name), escapeJson(user.picture));
         setCorsHeaders(exchange);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
-
         byte[] bytes = responseJson.getBytes(StandardCharsets.UTF_8);
         exchange.sendResponseHeaders(200, bytes.length);
         try (OutputStream os = exchange.getResponseBody()) {
@@ -155,7 +149,6 @@ public class apiHandler implements HttpHandler {
     public void handleSaveUser(HttpExchange exchange) throws IOException {
         try {
             String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(requestBody);
             String email = root.path("email").asText();
@@ -164,13 +157,10 @@ public class apiHandler implements HttpHandler {
 
             databaseInteractions db = new databaseInteractions();
             boolean success = db.saveUser(email, name, picture);
-
-            String response = success ? "{\"status\": \"success\"}" : "{\"status\": \"error\"}";
-
+            String response = success ? "{\"status\":\"success\"}" : "{\"status\":\"error\"}";
             setCorsHeaders(exchange);
             exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
             exchange.sendResponseHeaders(success ? 200 : 500, response.length());
-
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes(StandardCharsets.UTF_8));
             }
@@ -180,28 +170,18 @@ public class apiHandler implements HttpHandler {
         }
     }
 
-    private void handleOptionsRequest(HttpExchange exchange) throws IOException {
-        setCorsHeaders(exchange);
-        exchange.sendResponseHeaders(204, -1);
-        exchange.close();
-    }
-
     private void handleFollowStock(HttpExchange exchange) throws IOException {
         String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode root = mapper.readTree(body);
-
         String email = root.path("email").asText();
         String stock = root.path("stockSymbol").asText();
-
         databaseInteractions db = new databaseInteractions();
         boolean success = db.followStock(email, stock);
-
         String response = success ? "{\"status\":\"followed\"}" : "{\"status\":\"error\"}";
         setCorsHeaders(exchange);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.sendResponseHeaders(success ? 200 : 500, response.length());
-
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes(StandardCharsets.UTF_8));
         }
@@ -211,18 +191,14 @@ public class apiHandler implements HttpHandler {
         String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode root = mapper.readTree(body);
-
         String email = root.path("email").asText();
         String stock = root.path("stockSymbol").asText();
-
         databaseInteractions db = new databaseInteractions();
         boolean success = db.unfollowStock(email, stock);
-
         String response = success ? "{\"status\":\"unfollowed\"}" : "{\"status\":\"error\"}";
         setCorsHeaders(exchange);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.sendResponseHeaders(success ? 200 : 500, response.length());
-
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes(StandardCharsets.UTF_8));
         }
@@ -230,32 +206,38 @@ public class apiHandler implements HttpHandler {
 
     private void handleGetFollowedStocks(HttpExchange exchange) throws IOException {
         String email = getQueryParam(exchange.getRequestURI().getQuery(), "email");
-
         if (email == null || email.isEmpty()) {
             sendJsonError(exchange, 400, "Missing email parameter");
             return;
         }
-
         databaseInteractions db = new databaseInteractions();
         ArrayList<String> followedStocks = db.getFollowedStocks(email);
-
         ObjectMapper mapper = new ObjectMapper();
         String response = mapper.writeValueAsString(followedStocks);
-
         setCorsHeaders(exchange);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.sendResponseHeaders(200, response.length());
-
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes());
         }
     }
 
+    // --- Utility Methods ---
+
+    private void sendMethodNotAllowed(HttpExchange exchange) throws IOException {
+        exchange.sendResponseHeaders(405, -1);
+        exchange.close();
+    }
+    
+    private void handleOptionsRequest(HttpExchange exchange) throws IOException {
+        setCorsHeaders(exchange);
+        exchange.sendResponseHeaders(204, -1);
+        exchange.close();
+    }
+
     private String getQueryParam(String query, String param) {
-        if (query == null)
-            return null;
-        String[] pairs = query.split("&");
-        for (String pair : pairs) {
+        if (query == null) return null;
+        for (String pair : query.split("&")) {
             String[] keyVal = pair.split("=", 2);
             if (keyVal.length > 0 && keyVal[0].equals(param)) {
                 return keyVal.length > 1 ? URLDecoder.decode(keyVal[1], StandardCharsets.UTF_8) : "";
@@ -265,7 +247,7 @@ public class apiHandler implements HttpHandler {
     }
 
     private void sendJsonError(HttpExchange exchange, int statusCode, String message) throws IOException {
-        String error = String.format("{\"error\": \"%s\"}", message);
+        String error = String.format("{\"error\":\"%s\"}", message);
         setCorsHeaders(exchange);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.sendResponseHeaders(statusCode, error.length());
@@ -274,18 +256,23 @@ public class apiHandler implements HttpHandler {
         }
     }
 
+    /**
+     * Sets the CORS headers for API responses.
+     * Uses the frontendUrl passed in during construction.
+     */
     private void setCorsHeaders(HttpExchange exchange) {
-        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "http://localhost:3000");
+        // *** THIS IS THE KEY CHANGE ***
+        // It now uses the variable loaded from your .env file
+        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", this.frontendUrl);
+        
         exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
         exchange.getResponseHeaders().add("Access-Control-Allow-Credentials", "true");
     }
 
     private String toJsonArray(ArrayList<sentiment> list) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[");
+        StringBuilder sb = new StringBuilder("[");
         SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-
         for (int i = 0; i < list.size(); i++) {
             sentiment s = list.get(i);
             sb.append("{");
@@ -299,8 +286,7 @@ public class apiHandler implements HttpHandler {
             sb.append("\"lastTen\":[");
             for (int j = 0; j < s.lastTen.size(); j++) {
                 sb.append(s.lastTen.get(j));
-                if (j < s.lastTen.size() - 1)
-                    sb.append(",");
+                if (j < s.lastTen.size() - 1) sb.append(",");
             }
             sb.append("],");
             sb.append("\"url1\":\"").append(escapeJson(s.url1)).append("\",");
@@ -308,17 +294,13 @@ public class apiHandler implements HttpHandler {
             sb.append("\"url3\":\"").append(escapeJson(s.url3)).append("\",");
             sb.append("\"llmAnalysis\":\"").append(escapeJson(s.llmAnalysis)).append("\"");
             sb.append("}");
-            if (i < list.size() - 1)
-                sb.append(",");
+            if (i < list.size() - 1) sb.append(",");
         }
-        sb.append("]");
-        return sb.toString();
+        return sb.append("]").toString();
     }
 
     private String escapeJson(String str) {
-        if (str == null)
-            return "";
+        if (str == null) return "";
         return str.replace("\\", "\\\\").replace("\"", "\\\"");
     }
-    
 }
