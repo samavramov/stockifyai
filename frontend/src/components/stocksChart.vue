@@ -221,42 +221,72 @@
 
 <script>
 import VueApexCharts from 'vue3-apexcharts';
-// 1. Import your entire api service
-import * as api from '../apiService.js';
 
 export default {
-  name: 'Home',
+  name: 'Dashboard', // Ensure this is 'Home' if that's your component name for routing clarity
   components: {
-    apexchart: VueApexCharts,
+    apexchart: VueApexCharts
   },
   data() {
     return {
-      // 2. Data is simplified, no hardcoded URLs or lengthy stock lists
-      stocks: [], // Will hold all stock data from the API
-      followedStocks: [], // Only populated for logged-in users
-      
-      // Component State
       activeTab: 'all',
+      showDropdown: false,
+      userName: '',
+      userEmail: '',
+      userPicture: '',
+      API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+      stocks: [
+        { symbol: 'AAPL', name: 'Apple Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'AMD', name: 'Advanced Micro Devices', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'AMZN', name: 'Amazon.com Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'AVGO', name: 'Broadcom Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'BA', name: 'Boeing Company', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'COIN', name: 'Coinbase Global Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'DIS', name: 'Walt Disney Co.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'GME', name: 'GameStop Corp.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'GOOGL', name: 'Alphabet Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'INTC', name: 'Intel Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'LCID', name: 'Lucid Group Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'META', name: 'Meta Platforms Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'MSFT', name: 'Microsoft Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'MU', name: 'Micron Technology Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'NFLX', name: 'Netflix Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'NVDA', name: 'NVIDIA Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'ORCL', name: 'Oracle Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'PLTR', name: 'Palantir Technologies', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'PYPL', name: 'PayPal Holdings Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'QCOM', name: 'Qualcomm Incorporated', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'RBLX', name: 'Roblox Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'SHOP', name: 'Shopify Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'SNAP', name: 'Snapchat Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'SOFI', name: 'SoFi Technologies Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'SPOT', name: 'Spotify Technology SA', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'TSLA', name: 'Tesla Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'UBER', name: 'Uber Technologies Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'WBD', name: 'Warner Bros. Discovery Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
+        { symbol: 'ZOOM', name: 'Zoom Video Communications', dailySentiment: null, tenDayAverage: null, percentChange: null }
+      ],
+      searchQuery: '',
+      showSuggestions: true,
+      isAddingStock: false,
+      addStockError: null,
       isLoading: true,
       loadingError: null,
-      
-      // User State (defaults to logged-out)
-      userEmail: '',
-      userName: '',
-      userPicture: '',
+      followedStocks: [],
     };
   },
   computed: {
-    // Computed properties remain the same and will react to data changes
     trendingStocks() {
-      // If logged out, only show top movers from the first 8 stocks
-      const sourceData = this.userEmail ? this.stocks : this.stocks.slice(0, 8);
-      return [...sourceData]
-        .filter(stock => stock.percentChange != null)
-        .sort((a, b) => Math.abs(b.percentChange) - Math.abs(a.percentChange))
+      let sourceForTrending = [];
+      if (!this.userEmail) {
+        sourceForTrending = this.stocks.slice(0, 8);
+      } else {
+        sourceForTrending = this.stocks; // If signed in, use all stocks
+      }
+      return [...sourceForTrending]
+        .sort((a, b) => Math.abs(b.percentChange ?? 0) - Math.abs(a.percentChange ?? 0))
         .slice(0, 5);
     },
-    // ...other computed properties are okay...
     lastTenDates() {
       const dates = [];
       const today = new Date();
@@ -269,8 +299,7 @@ export default {
     },
     chartSeries() {
       return this.followedStocks
-        .map(followed => this.stocks.find(s => s.symbol === followed.symbol))
-        .filter(stock => stock && stock.lastTen && stock.lastTen.length)
+        .filter(stock => stock.lastTen && stock.lastTen.length)
         .map(stock => ({
           name: stock.symbol,
           data: stock.lastTen.slice().reverse().map((value, idx) => ({
@@ -295,77 +324,178 @@ export default {
         legend: { position: 'bottom' }
       };
     },
+    filteredStocks() {
+      const query = this.searchQuery.trim().toUpperCase();
+      if (!query) return [];
+      return this.stocks.filter(stock =>
+        stock.symbol.includes(query) || stock.name.toUpperCase().includes(query)
+      );
+    },
+    followedStocksWithDetails() {
+      return this.followedStocks.map(stock => {
+        const details = this.stocks.find(s => s.symbol === stock.symbol) || {};
+        return { ...details, ...stock };
+      });
+    }
   },
-  // 3. A single, efficient initialization method in mounted()
   mounted() {
-    this.initializePage();
+    this.loadUserData();
+    this.loadAllSentiments();
   },
   methods: {
-    // 4. All methods now use the apiService
-    async initializePage() {
-      this.isLoading = true;
+    goToLogin() {
+      this.$router.push('/login')
+    },
+    async loadUserData() {
       try {
-        // Always load the public sentiment data first
-        const allSentiments = await api.getAllSentiments();
-        this.stocks = allSentiments.map(sentiment => ({
-          symbol: sentiment.stockSymbol,
-          name: sentiment.companyName,
-          dailySentiment: sentiment.sentimentValue,
-          tenDayAverage: sentiment.tenDayAverage,
-          percentChange: sentiment.percentChange,
-        }));
-
-        // THEN, try to get user data. This part can fail gracefully.
-        try {
-          const sessionData = await api.checkAuthStatus();
-          if (sessionData.user && sessionData.user.email) {
-            this.userEmail = sessionData.user.email;
-            this.userName = sessionData.user.name;
-            this.userPicture = sessionData.user.picture;
-            // If user is found, get their followed stocks
-            const followedSymbols = await api.getFollowedSymbols(this.userEmail);
-            this.followedStocks = followedSymbols.map(symbol => ({ symbol }));
-          }
-        } catch (authError) {
-          // This is expected if the user is not logged in. Clear any stale user data.
-          console.log("User is not authenticated. Displaying public view.");
-          this.userEmail = '';
-          this.userName = '';
-          this.userPicture = '';
-          this.followedStocks = [];
+        const sessionRes = await fetch(`${this.API_BASE_URL}/me`, {
+          credentials: 'include'
+        });
+        if (!sessionRes.ok) {
+          throw new Error('Not authenticated');
         }
 
+        const sessionData = await sessionRes.json();
+        console.log('Session data from /me:', sessionData);
+
+        if (!sessionData.user || !sessionData.user.email) {
+          throw new Error('No user object or email found in session data');
+        }
+
+        this.userEmail = sessionData.user.email;
+        this.userName = sessionData.user.name;
+        this.userPicture = sessionData.user.picture;
+        await this.loadFollowedStocksData();
       } catch (err) {
-        console.error('Failed to load page data:', err);
-        this.loadingError = "Could not load market data. Please try again later.";
+        console.error('Failed to load user data:', err);
+        this.userEmail = ''; // Ensure userEmail is cleared if authentication fails
+        // No redirect here, as this is the public-facing Home.vue.
+        // The router guard in main.js handles protecting authenticated routes.
+      }
+    },
+    async logout() {
+      this.closeDropdown();
+      localStorage.clear();
+      sessionStorage.clear();
+      try {
+        const response = await fetch(`${this.API_BASE_URL}/logout`, { method: 'GET', credentials: 'include' });
+        if (!response.ok) {
+          console.error('Server-side logout failed:', response.statusText);
+        }
+      } catch (err) {
+        console.error('Network error during logout request:', err);
+      } finally {
+        this.$router.push('/'); // Redirect to the landing page or login page
+      }
+    },
+    toggleDropdown() { this.showDropdown = !this.showDropdown; },
+    closeDropdown() { this.showDropdown = false; },
+    goToFollowingPage() { this.$router.push(`/following`); this.closeDropdown(); },
+    goToStockDetail(symbol) { this.$router.push(`/stock/${symbol}`); },
+    sentimentClass(value) { return value >= 0 ? 'text-green-600' : 'text-red-600'; },
+    async loadAllSentiments() {
+      try {
+        const response = await fetch(`${this.API_BASE_URL}/sentiments`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const allSentiments = await response.json();
+        allSentiments.forEach(item => {
+          const idx = this.stocks.findIndex(s => s.symbol === item.stockSymbol);
+          if (idx !== -1) {
+            this.stocks[idx].dailySentiment = item.sentimentValue;
+            this.stocks[idx].tenDayAverage = item.tenDayAverage;
+            this.stocks[idx].percentChange = item.percentChange;
+            this.stocks[idx].name = item.companyName || this.stocks[idx].name;
+          }
+        });
+      } catch (err) {
+        console.error('Failed to load all sentiments:', err);
+      }
+    },
+    onInputChange() {
+      this.addStockError = null;
+      this.showSuggestions = true;
+    },
+    selectStock(symbol) {
+      this.searchQuery = symbol;
+      this.showSuggestions = false;
+    },
+    async loadFollowedStocksData() {
+      if (!this.userEmail) {
+        this.followedStocks = [];
+        this.isLoading = false;
+        return;
+      }
+      this.isLoading = true;
+      this.loadingError = null;
+      try {
+        const symbolsResponse = await fetch(`${this.API_BASE_URL}/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
+        if (!symbolsResponse.ok) throw new Error(`HTTP ${symbolsResponse.status}`);
+        const followedSymbols = await symbolsResponse.json();
+
+        const sentimentsResponse = await fetch(`${this.API_BASE_URL}/sentiments`);
+        if (!sentimentsResponse.ok) throw new Error(`HTTP ${sentimentsResponse.status}`);
+        const allSentiments = await sentimentsResponse.json();
+
+        this.followedStocks = followedSymbols.map(symbol => {
+          const stockData = allSentiments.find(s => s.stockSymbol === symbol); // Changed from s.symbol to s.stockSymbol
+          return stockData ? {
+            symbol: stockData.stockSymbol,
+            name: stockData.companyName,
+            sentimentValue: stockData.sentimentValue,
+            lastTen: stockData.lastTen || [],
+          } : { symbol, name: 'Data not found', sentimentValue: null, lastTen: [] };
+        });
+
+      } catch (error) {
+        this.loadingError = `Failed to load followed stocks. ${error.message}`;
       } finally {
         this.isLoading = false;
       }
     },
-    
-    async logout() {
+    async addStock() {
+      this.addStockError = null;
+      const symbol = this.searchQuery.trim().toUpperCase();
+      if (!symbol) return;
+      if (!this.stocks.some(s => s.symbol === symbol)) {
+        this.addStockError = `${symbol} is not a valid stock symbol.`; return;
+      }
+      if (this.followedStocks.some(s => s.symbol === symbol)) {
+        this.addStockError = `${symbol} is already followed.`; return;
+      }
+      this.isAddingStock = true;
       try {
-        await api.logoutUser();
-      } catch (err) {
-        console.error('Logout request failed:', err);
+        const response = await fetch(`${this.API_BASE_URL}/followStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+        await this.loadFollowedStocksData();
+        this.searchQuery = '';
+      } catch (error) {
+        this.addStockError = `Error following stock: ${error.message}`;
       } finally {
-        // Simply reload the page. It will re-initialize in the logged-out state.
-        window.location.reload();
+        this.isAddingStock = false;
+        this.showSuggestions = false;
       }
     },
-
-    // UI Helper methods
-    goToLogin() {
-      this.$router.push('/login');
+    async removeStock(symbol) {
+      try {
+        const response = await fetch(`${this.API_BASE_URL}/unfollowStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
+        await this.loadFollowedStocksData();
+      } catch (error) {
+        console.error("Failed to remove stock:", error);
+        alert(`Error: ${error.message}`);
+      }
     },
-    goToStockDetail(symbol) {
-      this.$router.push(`/stock/${symbol}`);
-    },
-    sentimentClass(value) {
-      if (value === null || value === undefined) return 'text-gray-400';
-      return value >= 0 ? 'text-green-600' : 'text-red-600';
-    },
-  },
+  }
 };
 </script>
 
