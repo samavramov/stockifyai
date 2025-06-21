@@ -53,6 +53,7 @@ public class Server {
             clientSecret = dotenv.get("GOOGLE_CLIENT_SECRET");
             backendURL = dotenv.get("BACKEND_URL");
             frontendURL = dotenv.get("FRONTEND_URL"); // Load from .env
+            System.out.println("loaded from dotenv");
         }
 
         GOOGLE_CLIENT_ID = clientId;

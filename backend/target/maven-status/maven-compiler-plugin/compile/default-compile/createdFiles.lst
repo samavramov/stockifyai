@@ -1,0 +1,8 @@
+com/stockdashboard/databaseInteractions.class
+com/stockdashboard/User.class
+com/stockdashboard/aquireSentiment.class
+com/stockdashboard/sentiment.class
+com/stockdashboard/aquireURL.class
+com/stockdashboard/apiHandler.class
+com/stockdashboard/periodicUpdate.class
+com/stockdashboard/Server.class
