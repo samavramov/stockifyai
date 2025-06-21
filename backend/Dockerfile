@@ -1,14 +1,13 @@
-# Stage 1: Build the Java application
-FROM maven:3.9-openjdk-21 AS build 
+FROM ubuntu:25.04
+
+RUN apt update && apt upgrade -y && apt install -y openjdk-21-jdk maven
+
 WORKDIR /app
 COPY pom.xml .                   
-COPY src ./src                   
-RUN mvn clean install -DskipTests 
+COPY src ./src  
+RUN mvn clean install -DskipTests
 
-# Stage 2: Create the final lean runtime image
-FROM openjdk:21-jre-slim         
-WORKDIR /app
-# Copy the built JAR from the 'build' stage
-COPY --from=build /app/target/stockdashboard-backend-*-jar-with-dependencies.jar app.jar
+RUN cp target/stockdashboard-backend-*-jar-with-dependencies.jar /app/app.jar
+RUN rm -rf src target pom.xml
 
-ENTRYPOINT ["java", "-jar", "app.jar"] # Run the application
+ENTRYPOINT [ "java", "-jar", "/app/app.jar" ]
