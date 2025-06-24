@@ -63,6 +63,9 @@ public class databaseInteractions {
                     "CRITICAL ERROR: Database environment variables (DB_URL, DB_USER, DB_PASSWORD) are not set. Exiting.");
             System.exit(1);
         }
+        System.out.println("DB_URL: " + DB_URL);
+        System.out.println("DB_USER: " + DB_USER);
+        System.out.println("DB_PASSWORD: xxxx");
     }
 
     public void deleteOldSentiments() {
@@ -129,6 +132,14 @@ public class databaseInteractions {
     }
 
     private Connection getConnection() throws SQLException {
+        // Ensure the Oracle JDBC driver is loaded when getConnection is called
+        // This makes sure Class.forName is not solely reliant on static block execution order
+        try {
+            Class.forName("oracle.jdbc.OracleDriver");
+        } catch (ClassNotFoundException e) {
+            System.err.println("Oracle JDBC Driver not found. Make sure ojdbcX.jar is in your classpath.");
+            throw new SQLException("JDBC Driver not found", e);
+        }
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
     }
 
