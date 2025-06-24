@@ -61,7 +61,7 @@
 
         <div v-else-if="loadingError" class="text-center py-8">
           <p class="text-red-600">Error loading data: {{ loadingError }}</p>
-          <button @click="loadUserDataAndFollowedStocks"
+          <button @click="loadPageData"
             class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Retry</button>
         </div>
 
@@ -227,7 +227,7 @@ export default {
         xaxis: { type: 'datetime', title: { text: 'Date' }, labels: { rotate: -45, formatter: (val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) } },
         yaxis: { min: -1, max: 1, title: { text: 'Sentiment' } },
         stroke: { curve: 'smooth' },
-        tooltip: { enabled: true, x: { format: 'dd MMM yyyy' }},
+        tooltip: { enabled: true, x: { format: 'dd MMM yy' }},
         legend: { position: 'bottom' }
       };
     },
@@ -271,10 +271,19 @@ export default {
         
         const detailedResponses = await Promise.all(detailPromises);
         
-        // Step 4: Populate the local data array
+        // Step 4: Populate the local data array by cleaning and mapping the API response
         this.followedStocks = detailedResponses
-            .flat() // The API returns an array, so flatten the array of arrays
-            .filter(stockData => stockData); // Filter out any null responses from failed fetches
+            .flat() // The API returns an array for each symbol, so flatten [[{..}], [{..}]] to [{..}, {..}]
+            .filter(stockData => stockData) // Filter out any null responses from failed fetches
+            .map(apiStock => ({
+              // Map API fields (e.g., stockSymbol) to the fields the template expects (e.g., symbol)
+              symbol: apiStock.stockSymbol,
+              name: apiStock.companyName,
+              sentimentValue: apiStock.sentimentValue,
+              tenDayAverage: apiStock.tenDayAverage,
+              percentChange: apiStock.percentChange,
+              lastTen: apiStock.lastTen || []
+            }));
 
       } catch (error) {
         console.error("Failed to load followed stocks page data:", error);
@@ -285,6 +294,10 @@ export default {
       }
     },
     async removeStock(symbol) {
+      // Add stop propagation to prevent navigation when clicking the button
+      const event = window.event;
+      if (event) event.stopPropagation();
+      
       try {
         const response = await fetch(`${this.API_BASE_URL}/api/unfollowStock`, {
           method: 'POST',
@@ -305,7 +318,9 @@ export default {
     },
     onDragEnd() {
       // You can implement saving the new order to the backend here if you wish
-      console.log('New order:', this.followedStocks.map(s => s.symbol));
+      const newOrder = this.followedStocks.map(s => s.symbol);
+      console.log('New order:', newOrder);
+      // Example: fetch(`${this.API_BASE_URL}/api/updateOrder`, { ... body: { email, order: newOrder } ... });
     },
     goBack() {
       this.$router.push('/home');

@@ -394,7 +394,7 @@ export default {
         },
         yaxis: { min: -1, max: 1, title: { text: 'Sentiment' } },
         stroke: { curve: 'smooth' },
-        tooltip: { enabled: true, x: { format: 'dd MMM yyyy' } },
+        tooltip: { enabled: true, x: { format: 'dd MMM yy' } },
         legend: { position: 'bottom' }
       };
     },
