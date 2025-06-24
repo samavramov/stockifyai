@@ -242,7 +242,7 @@
                   class="bg-white shadow rounded-xl p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
                   <div>
                     <h2 class="text-lg font-semibold">{{ stock.symbol }} - {{ stock.name }}</h2>
-                    <p class="text-sm text-gray-600">Sentiment: {{ stock.sentimentValue ?? 'N/A' }}</p>
+                    <p class="text-sm text-gray-600">Sentiment: {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : 'N/A' }}</p>
                   </div>
                   <button @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -308,7 +308,7 @@ export default {
   data() {
     return {
       // General State
-      sortColumn: null,
+      sortColumn: 'symbol',
       sortDirection: 'asc',
       activeTab: 'all',
       showDropdown: false,
@@ -317,36 +317,37 @@ export default {
       userEmail: '',
       userPicture: '',
       base_url: import.meta.env.VITE_API_BASE_URL,
+      // This holds the detailed data for ALL available stocks
       stocks: [
-        { symbol: 'AAPL', name: 'Apple Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'AMD', name: 'Advanced Micro Devices', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'AMZN', name: 'Amazon.com Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'AVGO', name: 'Broadcom Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'BA', name: 'Boeing Company', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'COIN', name: 'Coinbase Global Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'DIS', name: 'Walt Disney Co.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'GME', name: 'GameStop Corp.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'GOOGL', name: 'Alphabet Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'INTC', name: 'Intel Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'LCID', name: 'Lucid Group Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'META', name: 'Meta Platforms Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'MSFT', name: 'Microsoft Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'MU', name: 'Micron Technology Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'NFLX', name: 'Netflix Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'NVDA', name: 'NVIDIA Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'ORCL', name: 'Oracle Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'PLTR', name: 'Palantir Technologies', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'PYPL', name: 'PayPal Holdings Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'QCOM', name: 'Qualcomm Incorporated', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'RBLX', name: 'Roblox Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'SHOP', name: 'Shopify Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'SNAP', name: 'Snapchat Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'SOFI', name: 'SoFi Technologies Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'SPOT', name: 'Spotify Technology SA', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'TSLA', name: 'Tesla Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'UBER', name: 'Uber Technologies Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'WBD', name: 'Warner Bros. Discovery Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null },
-        { symbol: 'ZOOM', name: 'Zoom Video Communications', dailySentiment: null, tenDayAverage: null, percentChange: null }
+        { symbol: 'AAPL', name: 'Apple Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'AMD', name: 'Advanced Micro Devices', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'AMZN', name: 'Amazon.com Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'AVGO', name: 'Broadcom Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'BA', name: 'Boeing Company', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'COIN', name: 'Coinbase Global Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'DIS', name: 'Walt Disney Co.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'GME', name: 'GameStop Corp.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'GOOGL', name: 'Alphabet Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'INTC', name: 'Intel Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'LCID', name: 'Lucid Group Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'META', name: 'Meta Platforms Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'MSFT', name: 'Microsoft Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'MU', name: 'Micron Technology Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'NFLX', name: 'Netflix Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'NVDA', name: 'NVIDIA Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'ORCL', name: 'Oracle Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'PLTR', name: 'Palantir Technologies', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'PYPL', name: 'PayPal Holdings Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'QCOM', name: 'Qualcomm Incorporated', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'RBLX', name: 'Roblox Corporation', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'SHOP', name: 'Shopify Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'SNAP', name: 'Snapchat Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'SOFI', name: 'SoFi Technologies Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'SPOT', name: 'Spotify Technology SA', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'TSLA', name: 'Tesla Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'UBER', name: 'Uber Technologies Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'WBD', name: 'Warner Bros. Discovery Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
+        { symbol: 'ZOOM', name: 'Zoom Video Communications', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] }
       ],
       searchQuery: '',
       showSuggestions: true,
@@ -354,7 +355,8 @@ export default {
       addStockError: null,
       isLoading: true,
       loadingError: null,
-      followedStocks: [],
+      // FIX: This now only holds an array of strings (stock symbols)
+      followedStockSymbols: [],
     };
   },
   computed: {
@@ -378,8 +380,15 @@ export default {
     },
     trendingStocks() {
       return [...this.stocks]
-        .sort((a, b) => Math.abs(b.percentChange ?? 0) - Math.abs(a.percentChange ?? 0))
+        .filter(stock => stock.percentChange != null)
+        .sort((a, b) => Math.abs(b.percentChange) - Math.abs(a.percentChange))
         .slice(0, 5);
+    },
+    // FIX: A new computed property to get the full objects for followed stocks
+    followedStocksWithDetails() {
+      return this.followedStockSymbols
+        .map(symbol => this.stocks.find(s => s.symbol === symbol))
+        .filter(stock => stock); // Filter out any undefined stocks just in case
     },
     lastTenDates() {
       const dates = [];
@@ -392,12 +401,13 @@ export default {
       return dates;
     },
     chartSeries() {
-      return this.followedStocks
-        .filter(stock => stock.lastTen && stock.lastTen.length)
+      // FIX: This now uses the new computed property for followed stocks
+      return this.followedStocksWithDetails
+        .filter(stock => stock.lastTen && stock.lastTen.length > 0)
         .map(stock => ({
           name: stock.symbol,
           data: stock.lastTen.slice().reverse().map((value, idx) => ({
-            x: this.lastTenDates[idx],
+            x: this.lastTenDates[idx] || new Date().toISOString().slice(0,10),
             y: value
           }))
         }));
@@ -406,6 +416,7 @@ export default {
       return {
         chart: { id: 'sentiment-line-chart', toolbar: { show: false } },
         xaxis: {
+          type: 'datetime',
           title: { text: 'Date' },
           labels: {
             rotate: -45,
@@ -414,39 +425,159 @@ export default {
         },
         yaxis: { min: -1, max: 1, title: { text: 'Sentiment' } },
         stroke: { curve: 'smooth' },
-        tooltip: { enabled: true },
+        tooltip: { enabled: true, x: { format: 'dd MMM yyyy' } },
         legend: { position: 'bottom' }
       };
     },
     filteredStocks() {
       const query = this.searchQuery.trim().toUpperCase();
       if (!query) return [];
+      // Search from the master list of all available stocks
       return this.stocks.filter(stock =>
         stock.symbol.includes(query) || stock.name.toUpperCase().includes(query)
       );
-    },
-    followedStocksWithDetails() {
-      // Ensure followedStocks has the necessary properties for isStockFollowed
-      return this.followedStocks.map(stock => {
-        const details = this.stocks.find(s => s.symbol === stock.symbol) || {};
-        return { ...details, ...stock };
-      });
     }
   },
-  mounted() {
-    this.loadUserData();
-    this.loadAllSentiments();
+  async mounted() {
+    // FIX: Streamlined initial data loading
+    this.isLoading = true;
+    await this.loadUserData(); // Gets user info and populates followedStockSymbols
+    await this.loadAllSentiments(); // Gets data for all 29 stocks
+    this.isLoading = false;
   },
   methods: {
-    // Helper to check if a stock is followed
+    // FIX: The helper now checks the simple array of symbols, which is much faster.
     isStockFollowed(symbol) {
-      return this.followedStocks.some(stock => stock.symbol === symbol);
+      return this.followedStockSymbols.includes(symbol);
     },
+    async loadUserData() {
+      try {
+        const sessionRes = await fetch(`${this.base_url}/me`, {
+          credentials: 'include'
+        });
+        if (!sessionRes.ok) throw new Error('Not authenticated');
+
+        const sessionData = await sessionRes.json();
+        if (!sessionData.user || !sessionData.user.email) {
+          throw new Error('No user object or email found in session data');
+        }
+
+        this.userEmail = sessionData.user.email;
+        this.userName = sessionData.user.name;
+        this.userPicture = sessionData.user.picture;
+        
+        // Fetch just the symbols of followed stocks. This is a very fast operation.
+        const symbolsResponse = await fetch(`${this.base_url}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
+        if (!symbolsResponse.ok) throw new Error(`HTTP ${symbolsResponse.status}`);
+        this.followedStockSymbols = await symbolsResponse.json();
+
+      } catch (err) {
+        console.error('Failed to load user data:', err);
+        this.$router.push('/login');
+      }
+    },
+    async addStockFromAll(symbol) {
+      const event = window.event;
+      if (event) event.stopPropagation();
+      
+      this.addStockError = null;
+      if (this.isStockFollowed(symbol)) return; // Already followed, do nothing.
+
+      try {
+        const response = await fetch(`${this.base_url}/api/followStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+        
+        // FIX: Optimistic UI update for instant feedback.
+        this.followedStockSymbols.push(symbol);
+
+      } catch (error) {
+        this.addStockError = `Error following stock: ${error.message}`;
+      }
+    },
+    async removeStock(symbol) {
+      const event = window.event;
+      if (event) event.stopPropagation();
+      try {
+        const response = await fetch(`${this.base_url}/api/unfollowStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
+        
+        // FIX: Optimistic UI update for instant feedback.
+        const index = this.followedStockSymbols.indexOf(symbol);
+        if (index > -1) {
+          this.followedStockSymbols.splice(index, 1);
+        }
+      } catch (error) {
+        console.error("Failed to remove stock:", error);
+        alert(`Error: ${error.message}`);
+      }
+    },
+    async addStockFromInput() {
+      const symbol = this.searchQuery.trim().toUpperCase();
+      if (!symbol) return;
+      if (!this.stocks.some(s => s.symbol === symbol)) {
+        this.addStockError = `${symbol} is not a valid stock symbol.`;
+        return;
+      }
+      if (this.isStockFollowed(symbol)) {
+        this.addStockError = `${symbol} is already followed.`;
+        return;
+      }
+      await this.addStockFromAll(symbol); // Reuse the main logic
+      this.searchQuery = '';
+      this.showSuggestions = false;
+    },
+    async logout() {
+      this.closeAllDropdowns();
+      localStorage.clear();
+      sessionStorage.clear();
+      try {
+        await fetch(`${this.base_url}/logout`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+      } catch (err) {
+        console.error('Network error during logout request:', err);
+      } finally {
+        // FIX: Corrected the invalid path which would have caused an error.
+        this.$router.push('/login');
+      }
+    },
+    async loadAllSentiments() {
+      try {
+        const response = await fetch(`${this.base_url}/api/sentiments`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const allSentiments = await response.json();
+        
+        // Update the master 'stocks' array with fresh data from the backend
+        allSentiments.forEach(item => {
+          const idx = this.stocks.findIndex(s => s.symbol === item.stockSymbol);
+          if (idx !== -1) {
+            this.stocks[idx].dailySentiment = item.sentimentValue;
+            this.stocks[idx].tenDayAverage = item.tenDayAverage;
+            this.stocks[idx].percentChange = item.percentChange;
+            this.stocks[idx].name = item.companyName || this.stocks[idx].name;
+            this.stocks[idx].lastTen = item.lastTen || [];
+          }
+        });
+      } catch (err) {
+        console.error('Failed to load all sentiments:', err);
+        this.loadingError = 'Could not load market data. Please refresh.';
+      }
+    },
+    // ---- Methods below are mostly for UI and do not need changes ----
     toggleSortDropdown() {
       this.showSortDropdown = !this.showSortDropdown;
-      if (this.showSortDropdown) {
-        this.showDropdown = false;
-      }
+      if (this.showSortDropdown) this.showDropdown = false;
     },
     selectSort(column) {
       this.sortTable(column);
@@ -461,80 +592,23 @@ export default {
         this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
       } else {
         this.sortColumn = column;
-        this.sortDirection = 'asc';
-      }
-    },
-    async loadUserData() {
-      try {
-        const sessionRes = await fetch(`${this.base_url}/me`, {
-          credentials: 'include'
-        });
-        if (!sessionRes.ok) {
-          throw new Error('Not authenticated');
-        }
-
-        const sessionData = await sessionRes.json();
-        console.log('Session data from /me:', sessionData);
-
-        if (!sessionData.user || !sessionData.user.email) {
-          throw new Error('No user object or email found in session data');
-        }
-
-        this.userEmail = sessionData.user.email;
-        this.userName = sessionData.user.name;
-        this.userPicture = sessionData.user.picture;
-        await this.loadFollowedStocksData();
-      } catch (err) {
-        console.error('Failed to load user data:', err);
-        this.$router.push('/login');
-      }
-    },
-    async logout() {
-      this.closeAllDropdowns();
-      localStorage.clear();
-      sessionStorage.clear();
-
-      try {
-        const response = await fetch(`${this.base_url}/logout`, {
-          method: 'GET',
-          credentials: 'include'
-        });
-
-        if (!response.ok) {
-          console.error('Server-side logout failed:', response.statusText);
-        }
-      } catch (err) {
-        console.error('Network error during logout request:', err);
-      } finally {
-        this.$router.push('/git remote -v');
+        this.sortDirection = 'asc'; // Default to ascending when changing column
       }
     },
     toggleDropdown() {
       this.showDropdown = !this.showDropdown;
-      if (this.showDropdown) {
-        this.showSortDropdown = false;
-      }
+      if (this.showDropdown) this.showSortDropdown = false;
     },
-    goToFollowingPage() { this.$router.push(`/following`); this.closeAllDropdowns(); },
-    goToStockDetail(symbol) { this.$router.push(`/stock/${symbol}`); },
-    sentimentClass(value) { return value >= 0 ? 'text-green-600' : 'text-red-600'; },
-    async loadAllSentiments() {
-      try {
-        const response = await fetch(`${this.base_url}/api/sentiments`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const allSentiments = await response.json();
-        allSentiments.forEach(item => {
-          const idx = this.stocks.findIndex(s => s.symbol === item.stockSymbol);
-          if (idx !== -1) {
-            this.stocks[idx].dailySentiment = item.sentimentValue;
-            this.stocks[idx].tenDayAverage = item.tenDayAverage;
-            this.stocks[idx].percentChange = item.percentChange;
-            this.stocks[idx].name = item.companyName || this.stocks[idx].name;
-          }
-        });
-      } catch (err) {
-        console.error('Failed to load all sentiments:', err);
-      }
+    goToFollowingPage() { 
+      this.$router.push(`/following`); 
+      this.closeAllDropdowns(); 
+    },
+    goToStockDetail(symbol) { 
+      this.$router.push(`/stock/${symbol}`); 
+    },
+    sentimentClass(value) { 
+      if (value == null) return 'text-gray-400';
+      return value >= 0 ? 'text-green-600' : 'text-red-600'; 
     },
     onInputChange() {
       this.addStockError = null;
@@ -543,116 +617,6 @@ export default {
     selectStock(symbol) {
       this.searchQuery = symbol;
       this.showSuggestions = false;
-    },
-    async loadFollowedStocksData() {
-      if (!this.userEmail) return;
-      this.isLoading = true;
-      this.loadingError = null;
-      try {
-        const symbolsResponse = await fetch(`${this.base_url}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
-        if (!symbolsResponse.ok) throw new Error(`HTTP ${symbolsResponse.status}`);
-        const followedSymbols = await symbolsResponse.json();
-
-        const sentimentsResponse = await fetch(`${this.base_url}/api/sentiments`);
-        if (!sentimentsResponse.ok) throw new Error(`HTTP ${sentimentsResponse.status}`);
-        const allSentiments = await sentimentsResponse.json();
-
-        // Populate followedStocks with details and mark as followed
-        this.followedStocks = followedSymbols.map(symbol => {
-          const stockData = allSentiments.find(s => s.stockSymbol === symbol);
-          return stockData ? {
-            symbol: stockData.stockSymbol,
-            name: stockData.companyName,
-            sentimentValue: stockData.sentimentValue,
-            lastTen: stockData.lastTen || [],
-          } : { symbol, name: 'Data not found', sentimentValue: null, lastTen: [] };
-        });
-
-      } catch (error) {
-        this.loadingError = `Failed to load followed stocks. ${error.message}`;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    async addStockFromAll(symbol) { // New method for adding from 'all stocks' table
-      const event = window.event; // Get the event object
-      if (event) {
-        event.stopPropagation(); // Stop propagation to prevent row click
-      }
-      this.addStockError = null;
-      if (!this.userEmail) {
-        this.addStockError = 'Please log in to follow stocks.';
-        return;
-      }
-
-      if (this.isStockFollowed(symbol)) {
-        this.addStockError = `${symbol} is already followed.`;
-        return;
-      }
-
-      this.isAddingStock = true;
-      try {
-        const response = await fetch(`${this.base_url}/api/followStock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
-        });
-        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-        await this.loadFollowedStocksData(); // Reload followed stocks to update button state
-      } catch (error) {
-        this.addStockError = `Error following stock: ${error.message}`;
-      } finally {
-        this.isAddingStock = false;
-      }
-    },
-    async addStockFromInput() { // Renamed from addStock to differentiate
-      this.addStockError = null;
-      const symbol = this.searchQuery.trim().toUpperCase();
-      if (!symbol) return;
-      if (!this.stocks.some(s => s.symbol === symbol)) {
-        this.addStockError = `${symbol} is not a valid stock symbol.`; return;
-      }
-      if (this.isStockFollowed(symbol)) { // Use new helper
-        this.addStockError = `${symbol} is already followed.`; return;
-      }
-
-      this.isAddingStock = true;
-      try {
-        const response = await fetch(`${this.base_url}/api/followStock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
-        });
-        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-        await this.loadFollowedStocksData();
-        this.searchQuery = '';
-      } catch (error) {
-        this.addStockError = `Error following stock: ${error.message}`;
-      } finally {
-        this.isAddingStock = false;
-        this.showSuggestions = false;
-      }
-    },
-    async removeStock(symbol) {
-      const event = window.event; // Get the event object
-      if (event) {
-        event.stopPropagation(); // Stop propagation to prevent row click
-      }
-      try {
-        const response = await fetch(`${this.base_url}/api/unfollowStock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
-        });
-        if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
-        await this.loadFollowedStocksData();
-      } catch (error) {
-        console.error("Failed to remove stock:", error);
-        alert(`Error: ${error.message}`);
-      }
     },
   }
 };
