@@ -10,9 +10,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
-
-// ORACLE CHANGE: No longer need the postgres-specific import
-// import org.postgresql.util.PGobject; 
 import io.github.cdimascio.dotenv.Dotenv;
 
 public class databaseInteractions {
@@ -22,42 +19,42 @@ public class databaseInteractions {
     private static final String DB_PASSWORD;
 
     static {
-        
-        System.setProperty("oracle.net.tns_admin", "/Users/samavramov/oracle_wallet");
-        System.setProperty("oracle.net.ssl_server_dn_match", "true");
-        System.setProperty("javax.net.ssl.trustStore", "/Users/samavramov/oracle_wallet/truststore.jks");
-        System.setProperty("javax.net.ssl.trustStorePassword", "@HJR#E73fRH4<1K*r48iDx&+{'2");
-        System.setProperty("javax.net.ssl.keyStore", "/Users/samavramov/oracle_wallet/keystore.jks");
-        System.setProperty("javax.net.ssl.keyStorePassword", "@HJR#E73fRH4<1K*r48iDx&+{'2");
         Dotenv dotenv = null;
-        String dbUrl = null;
-        String dbUser = null;
-        String dbPassword = null;
+        String dbUrlTemp = null;    // Use temporary variables
+        String dbUserTemp = null;
+        String dbPasswordTemp = null;
 
         try {
-            dotenv = Dotenv.load();
+            // Configure Dotenv to look in the current working directory (where the JAR is run in Docker)
+            // This assumes the .env file is copied into the /app directory in the Dockerfile
+            dotenv = Dotenv.configure()
+                    .directory(".") // Look in the current working directory for .env
+                    .load();
         } catch (io.github.cdimascio.dotenv.DotenvException e) {
             System.err.println("Error loading .env file: " + e.getMessage());
             System.err.println("Attempting to fall back to system environment variables for DB credentials.");
         }
 
         if (dotenv != null) {
-            dbUrl = dotenv.get("DB_URL");
-            dbUser = dotenv.get("DB_USER");
-            dbPassword = dotenv.get("DB_PASSWORD");
+            dbUrlTemp = dotenv.get("DB_URL");
+            dbUserTemp = dotenv.get("DB_USER");
+            dbPasswordTemp = dotenv.get("DB_PASSWORD");
         }
 
-        if (dbUrl == null)
-            dbUrl = System.getenv("DB_URL");
-        if (dbUser == null)
-            dbUser = System.getenv("DB_USER");
-        if (dbPassword == null)
-            dbPassword = System.getenv("DB_PASSWORD");
+        // Fallback to system environment variables if .env didn't provide them
+        if (dbUrlTemp == null)
+            dbUrlTemp = System.getenv("DB_URL");
+        if (dbUserTemp == null)
+            dbUserTemp = System.getenv("DB_USER");
+        if (dbPasswordTemp == null)
+            dbPasswordTemp = System.getenv("DB_PASSWORD");
 
-        DB_URL = dbUrl;
-        DB_USER = dbUser;
-        DB_PASSWORD = dbPassword;
+        // Assign the loaded (or fallback) values to the final static fields
+        DB_URL = dbUrlTemp;     // <--- THIS LINE MUST BE ACTIVE AND UNTOUCHED
+        DB_USER = dbUserTemp;
+        DB_PASSWORD = dbPasswordTemp;
 
+        // Critical check: Ensure all necessary DB variables are set
         if (DB_URL == null || DB_USER == null || DB_PASSWORD == null) {
             System.err.println(
                     "CRITICAL ERROR: Database environment variables (DB_URL, DB_USER, DB_PASSWORD) are not set. Exiting.");
@@ -83,8 +80,6 @@ public class databaseInteractions {
         }
     }
 
-    // ORACLE CHANGE: Complete rewrite of schema initialization for Oracle SQL
-    // dialect.
     public void initializeSchema() {
         String[] sqls = new String[3];
         sqls[0] = "CREATE TABLE Stocks(" +
@@ -92,8 +87,8 @@ public class databaseInteractions {
                 "CompanyName VARCHAR2(255) NOT NULL," +
                 "Sentiment NUMBER(10, 4) NOT NULL," +
                 "SentimentTimestamp TIMESTAMP NOT NULL," +
-                "URLS JSON NOT NULL," +
-                "LLMAnalysis CLOB," + // Use CLOB for potentially very long text
+                "URLS CLOB CHECK (URLS IS JSON) NOT NULL," +
+                "LLMAnalysis CLOB," +
                 "PRIMARY KEY (StockSymbol, SentimentTimestamp)" +
                 ")";
         sqls[1] = "CREATE TABLE users (" +
@@ -111,16 +106,13 @@ public class databaseInteractions {
             for (String sql : sqls) {
                 try {
                     stmt.execute(sql);
-                    // This is a simple way to get the table name for the print statement
                     String tableName = sql.split(" ")[2].split("\\(")[0];
                     System.out.println("Table '" + tableName + "' created successfully.");
                 } catch (SQLException e) {
-                    // ORA-00955 is the error code for "name is already used by an existing object"
                     if (e.getErrorCode() == 955) {
                         String tableName = sql.split(" ")[2].split("\\(")[0];
                         System.out.println("Table '" + tableName + "' already exists. No action taken.");
                     } else {
-                        // Re-throw other errors
                         throw e;
                     }
                 }
@@ -132,8 +124,6 @@ public class databaseInteractions {
     }
 
     private Connection getConnection() throws SQLException {
-        // Ensure the Oracle JDBC driver is loaded when getConnection is called
-        // This makes sure Class.forName is not solely reliant on static block execution order
         try {
             Class.forName("oracle.jdbc.OracleDriver");
         } catch (ClassNotFoundException e) {
@@ -153,7 +143,6 @@ public class databaseInteractions {
         }
     }
 
-    // ORACLE CHANGE: Simplified JSON handling.
     public void addSentiment(sentiment s) {
         String sql = "INSERT INTO Stocks (StockSymbol, CompanyName, Sentiment, SentimentTimestamp, URLS, LLMAnalysis) VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -162,12 +151,12 @@ public class databaseInteractions {
             ps.setString(2, s.companyName);
             ps.setBigDecimal(3, java.math.BigDecimal.valueOf(s.sentimentValue));
             ps.setTimestamp(4, new Timestamp(s.sentimentTimestamp.getTime()));
-            String urlsJson = "[\""
-                    + s.url1.replace("\"", "\\\"") + "\",\""
-                    + s.url2.replace("\"", "\\\"") + "\",\""
-                    + s.url3.replace("\"", "\\\"") + "\"]";
 
-            // The OJDBC driver can accept a string for a JSON column. No PGobject needed.
+            String urlsJson = String.format("[\"%s\", \"%s\", \"%s\"]",
+                                    s.url1.replace("\"", "\\\""),
+                                    s.url2.replace("\"", "\\\""),
+                                    s.url3.replace("\"", "\\\""));
+
             ps.setString(5, urlsJson);
             ps.setString(6, s.llmAnalysis);
             ps.executeUpdate();
@@ -176,7 +165,6 @@ public class databaseInteractions {
         }
     }
 
-    // ORACLE CHANGE: Use modern Oracle syntax for limiting rows.
     public ArrayList<sentiment> getLatestSentimentsByStockSymbol(String stockSymbol, Integer limit) {
         ArrayList<sentiment> results = new ArrayList<>();
         if (limit > 20)
@@ -186,7 +174,7 @@ public class databaseInteractions {
                 "FROM Stocks " +
                 "WHERE StockSymbol = ? " +
                 "ORDER BY SentimentTimestamp DESC " +
-                "FETCH FIRST ? ROWS ONLY"; // The standard SQL / Oracle 12c+ way to limit results
+                "FETCH FIRST ? ROWS ONLY";
 
         try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, stockSymbol);
@@ -199,7 +187,20 @@ public class databaseInteractions {
                     Timestamp ts = rs.getTimestamp("SentimentTimestamp");
                     Date sentimentDate = new Date(ts.getTime());
                     String urlsJson = rs.getString("URLS");
-                    String[] urlArray = urlsJson.substring(1, urlsJson.length() - 1).replace("\"", "").split(",");
+                    String[] urlArray = new String[0];
+                    if (urlsJson != null && urlsJson.startsWith("[") && urlsJson.endsWith("]")) {
+                        String content = urlsJson.substring(1, urlsJson.length() - 1);
+                        if (!content.isEmpty()) {
+                             urlArray = content.split("\",\"");
+                             for(int i = 0; i < urlArray.length; i++) {
+                                 urlArray[i] = urlArray[i].replace("\\\"", "\"").trim();
+                                 if (urlArray[i].startsWith("\"") && urlArray[i].endsWith("\"")) {
+                                     urlArray[i] = urlArray[i].substring(1, urlArray[i].length() - 1);
+                                 }
+                             }
+                        }
+                    }
+
                     String u1 = urlArray.length > 0 ? urlArray[0] : "";
                     String u2 = urlArray.length > 1 ? urlArray[1] : "";
                     String u3 = urlArray.length > 2 ? urlArray[2] : "";
@@ -214,13 +215,14 @@ public class databaseInteractions {
         return results;
     }
 
-    // ORACLE CHANGE: Use MERGE statement instead of ON CONFLICT.
     public boolean saveUser(String email, String name, String picture) {
         String sql = "MERGE INTO users u " +
                 "USING (SELECT ? AS email, ? AS name, ? AS picture FROM dual) s " +
                 "ON (u.email = s.email) " +
                 "WHEN NOT MATCHED THEN " +
-                "  INSERT (email, name, picture) VALUES (s.email, s.name, s.picture)";
+                "  INSERT (email, name, picture) VALUES (s.email, s.name, s.picture) " +
+                "WHEN MATCHED THEN " +
+                "  UPDATE SET u.name = s.name, u.picture = s.picture";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
             stmt.setString(2, name);
@@ -249,8 +251,6 @@ public class databaseInteractions {
         return null;
     }
 
-    // ORACLE CHANGE: Handle "insert or ignore" by catching the unique constraint
-    // violation exception.
     public boolean followStock(String email, String stockSymbol) {
         String sql = "INSERT INTO user_stocks (user_email, stock_symbol) VALUES (?, ?)";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -259,10 +259,9 @@ public class databaseInteractions {
             int rows = stmt.executeUpdate();
             return rows > 0;
         } catch (SQLException e) {
-            // ORA-00001 is the Oracle error code for unique constraint violation
-            if (e.getErrorCode() == 1) {
+            if (e.getErrorCode() == 1) { // ORA-00001: unique constraint violated
                 System.out.println("User already follows stock. No action taken.");
-                return false; // Not a new follow, so return false.
+                return true;
             }
             e.printStackTrace();
             return false;
@@ -298,28 +297,27 @@ public class databaseInteractions {
         return followed;
     }
 
-    // This is a temporary main method for local testing
     public static void main(String[] args) {
         System.out.println("Running local database connection test...");
 
-        // This will load the .env file from your 'backend' directory
         databaseInteractions db = new databaseInteractions();
 
-        // Call the testConnection method
         boolean isConnected = db.testConnection();
 
         if (isConnected) {
             System.out.println("===================================================================");
             System.out.println("SUCCESS: Connection to Oracle Autonomous Database was successful!");
             System.out.println("===================================================================");
+            db.initializeSchema();
         } else {
             System.out.println("*****************************************************************");
             System.out.println("FAILURE: Could not connect to the database. Check console errors.");
             System.out.println("*****************************************************************");
             System.out.println("Common issues:");
-            System.out.println("1. Is the TNS_ADMIN path in your .env file correct?");
-            System.out.println("2. Is the DB_PASSWORD in your .env file correct?");
-            System.out.println("3. Is your computer connected to the internet?");
+            System.out.println("1. Is the DB_URL in your backend/.env file correct (TNS-less TLS format)?");
+            System.out.println("2. Is the DB_USER and DB_PASSWORD in your backend/.env file correct?");
+            System.out.println("3. Is your remote machine's public IP address (the one you SSH into) added to the Oracle ADB's Access Control List in OCI?");
+            System.out.println("4. Is your remote machine connected to the internet and can reach the ADB host?");
         }
     }
 }

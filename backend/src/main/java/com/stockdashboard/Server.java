@@ -1,4 +1,5 @@
 package com.stockdashboard;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.Headers;
@@ -18,9 +19,19 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+
+
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.Properties;
 
 public class Server {
@@ -77,22 +88,42 @@ public class Server {
     }
 
     private static void connorcl() {
+        // --- Configuration ---
+        // You no longer need the walletPath or System.setProperty("oracle.net.tns_admin") for TLS-only
+        // String walletPath = "/home/opc/oracle_wallet"; // <--- REMOVE THIS LINE
+
         String dbUser = "ADMIN"; // Your Autonomous Database username
         String dbPassword = "@HJR#E73fRH4<1K*r48iDx&+{2"; // Your DB USER PASSWORD
+
+        // **IMPORTANT:** Replace this with the TLS connection string copied from the OCI Console.
+        // Example format:
+        // jdbc:oracle:thin:@(description=(retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1521)(host=adb.region.oraclecloud.com))(connect_data=(service_name=your_servicename_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
         String jdbcUrl = "jdbc:oracle:thin:@(description=(retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1521)(host=adb.us-phoenix-1.oraclecloud.com))(connect_data=(service_name=gaa5388eccd29ab_stockifydb_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))";
 
         Connection connection = null;
         try {
             Class.forName("oracle.jdbc.OracleDriver");
+
             Properties props = new Properties();
             props.setProperty("user", dbUser);
             props.setProperty("password", dbPassword);
+            // Optionally, set SSL properties directly if not included in the JDBC URL
+            // props.setProperty("oracle.net.ssl_version", "1.2"); // Or "1.3" if your DB and JDK support it
+            // props.setProperty("oracle.net.ssl_server_dn_match", "true"); // Recommended for server identity verification
+
             System.out.println("Attempting to connect to Oracle Autonomous Database (TLS only)...");
             System.out.println("JDBC URL: " + jdbcUrl);
+
+            // No longer needed for TLS-only connections
+            // System.setProperty("oracle.net.tns_admin", walletPath); 
+            // System.setProperty("javax.net.debug", "ssl,handshake"); // Keep for debugging if needed
+
             connection = DriverManager.getConnection(jdbcUrl, props);
+
             if (connection != null) {
                 System.out.println("Successfully connected to Oracle Autonomous Database!");
             }
+
         } catch (ClassNotFoundException e) {
             System.err.println("Oracle JDBC Driver or companion JARs not found. " +
                                "Make sure ojdbcX.jar is in your classpath. Companion JARs (oraclepki.jar, osdt_core.jar, osdt_cert.jar) are usually only needed for wallet/mTLS connections.");
@@ -113,6 +144,10 @@ public class Server {
             }
         }
     }
+
+
+
+
     public static void main(String[] args) throws IOException {
         connorcl();
         int port = 8001; // This port is for the *backend server*
