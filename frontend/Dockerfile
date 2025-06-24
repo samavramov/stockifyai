@@ -20,7 +20,7 @@ RUN npm run build
 FROM nginx:stable-alpine
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 # --- NEW/UPDATED LINE: Copy your custom Nginx configuration file ---
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 # --- END NEW/UPDATED LINE ---
 
 EXPOSE 80
