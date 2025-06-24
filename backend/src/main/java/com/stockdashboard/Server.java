@@ -93,10 +93,10 @@ public class Server {
         ExecutorService threadPool = Executors.newFixedThreadPool(10);
         server.setExecutor(threadPool);
 
-        // You will need to update apiHandler to accept the 'db' object
-        // Example: final apiHandler apiHandler = new apiHandler(FRONTEND_URL, db);
-        // For now, assuming apiHandler creates its own db instance if needed.
-        apiHandler apiHandler = new apiHandler(FRONTEND_URL);
+        // --- FIX: Pass the shared 'db' object to the apiHandler's constructor ---
+        // This makes the handler more efficient by sharing the single DB connection pool.
+        final apiHandler apiHandler = new apiHandler(FRONTEND_URL, db);
+        
         server.createContext("/api/sentiments", apiHandler);
         server.createContext("/api/saveUser", apiHandler);
         server.createContext("/api/getUser", apiHandler);
@@ -188,8 +188,6 @@ public class Server {
                 sessionUser.addProperty("picture", picture);
                 activeSessions.put(sessionToken, sessionUser);
 
-                // --- FIX: Direct database call to save the user ---
-                // This replaces the broken self-API call and resolves the PKIX & ORA-02291 errors.
                 threadPool.submit(() -> {
                     try {
                         System.out.println("Attempting to save user to DB: " + email);
@@ -221,14 +219,12 @@ public class Server {
 
        server.createContext("/logout", exchange -> {
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                // *** Use FRONTEND_URL for CORS headers ***
                 addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS",
                         "Content-Type, Authorization");
                 exchange.sendResponseHeaders(204, -1);
                 exchange.close();
                 return;
             }
-            // *** Use FRONTEND_URL for CORS headers ***
             addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET", "Content-Type");
             String sessionId = getCookieValue(exchange.getRequestHeaders(), "sessionId");
             if (sessionId != null) {
@@ -245,14 +241,12 @@ public class Server {
 
         server.createContext("/me", exchange -> {
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                // *** Use FRONTEND_URL for CORS headers ***
                 addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS",
                         "Content-Type, Authorization");
                 exchange.sendResponseHeaders(204, -1);
                 exchange.close();
                 return;
             }
-            // *** Use FRONTEND_URL for CORS headers ***
             addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET", "Content-Type, Authorization");
             String sessionId = getCookieValue(exchange.getRequestHeaders(), "sessionId");
             if (sessionId != null && activeSessions.containsKey(sessionId)) {
@@ -277,15 +271,12 @@ public class Server {
             }
 
             try {
-                // Define the root directory for your built frontend files
                 final String root = "website/frontend/dist";
                 URI uri = exchange.getRequestURI();
                 String path = uri.getPath().equals("/") ? "/index.html" : uri.getPath();
 
-                // Construct the full path to the requested file
                 String filePath = root + path;
 
-                // Basic security check to prevent path traversal attacks
                 if (filePath.contains("..")) {
                     exchange.sendResponseHeaders(400, -1); // Bad Request
                     exchange.close();
@@ -294,7 +285,6 @@ public class Server {
 
                 byte[] bytes = Files.readAllBytes(Paths.get(filePath));
 
-                // Determine the correct Content-Type based on file extension
                 Headers headers = exchange.getResponseHeaders();
                 if (filePath.endsWith(".html")) {
                     headers.set("Content-Type", "text/html; charset=UTF-8");
@@ -304,14 +294,13 @@ public class Server {
                     headers.set("Content-Type", "text/css");
                 } else if (filePath.endsWith(".png")) {
                     headers.set("Content-Type", "image/png");
-                } // Add more types as needed (e.g., .jpg, .svg, .ico)
+                }
 
                 exchange.sendResponseHeaders(200, bytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(bytes);
                 }
             } catch (IOException e) {
-                // This will catch file not found errors
                 System.err.println("Error serving static file: " + e.getMessage());
                 String response = "404 (Not Found)\n";
                 exchange.sendResponseHeaders(404, response.length());
@@ -322,6 +311,7 @@ public class Server {
                 exchange.close();
             }
         });
+        
         server.start();
         System.out.println("Server started on port " + port);
     }

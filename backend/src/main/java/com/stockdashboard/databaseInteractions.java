@@ -1,5 +1,8 @@
 package com.stockdashboard;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -25,11 +28,7 @@ public class databaseInteractions {
         String dbPasswordTemp = null;
 
         try {
-            // Configure Dotenv to look in the current working directory (where the JAR is run in Docker)
-            // This assumes the .env file is copied into the /app directory in the Dockerfile
-            dotenv = Dotenv.configure()
-                    .directory(".") // Look in the current working directory for .env
-                    .load();
+            dotenv = Dotenv.configure().directory(".").load();
         } catch (io.github.cdimascio.dotenv.DotenvException e) {
             System.err.println("Error loading .env file: " + e.getMessage());
             System.err.println("Attempting to fall back to system environment variables for DB credentials.");
@@ -41,7 +40,6 @@ public class databaseInteractions {
             dbPasswordTemp = dotenv.get("DB_PASSWORD");
         }
 
-        // Fallback to system environment variables if .env didn't provide them
         if (dbUrlTemp == null)
             dbUrlTemp = System.getenv("DB_URL");
         if (dbUserTemp == null)
@@ -49,12 +47,10 @@ public class databaseInteractions {
         if (dbPasswordTemp == null)
             dbPasswordTemp = System.getenv("DB_PASSWORD");
 
-        // Assign the loaded (or fallback) values to the final static fields
-        DB_URL = dbUrlTemp;     // <--- THIS LINE MUST BE ACTIVE AND UNTOUCHED
+        DB_URL = dbUrlTemp;
         DB_USER = dbUserTemp;
         DB_PASSWORD = dbPasswordTemp;
 
-        // Critical check: Ensure all necessary DB variables are set
         if (DB_URL == null || DB_USER == null || DB_PASSWORD == null) {
             System.err.println(
                     "CRITICAL ERROR: Database environment variables (DB_URL, DB_USER, DB_PASSWORD) are not set. Exiting.");
@@ -165,7 +161,7 @@ public class databaseInteractions {
         }
     }
 
-    public ArrayList<sentiment> getLatestSentimentsByStockSymbol(String stockSymbol, Integer limit) {
+    public ArrayList<sentiment> getLatestSentimentsByStockSymbol(String stockSymbol, Integer limit) throws SQLException {
         ArrayList<sentiment> results = new ArrayList<>();
         if (limit > 20)
             limit = 20;
@@ -187,31 +183,32 @@ public class databaseInteractions {
                     Timestamp ts = rs.getTimestamp("SentimentTimestamp");
                     Date sentimentDate = new Date(ts.getTime());
                     String urlsJson = rs.getString("URLS");
-                    String[] urlArray = new String[0];
-                    if (urlsJson != null && urlsJson.startsWith("[") && urlsJson.endsWith("]")) {
-                        String content = urlsJson.substring(1, urlsJson.length() - 1);
-                        if (!content.isEmpty()) {
-                             urlArray = content.split("\",\"");
-                             for(int i = 0; i < urlArray.length; i++) {
-                                 urlArray[i] = urlArray[i].replace("\\\"", "\"").trim();
-                                 if (urlArray[i].startsWith("\"") && urlArray[i].endsWith("\"")) {
-                                     urlArray[i] = urlArray[i].substring(1, urlArray[i].length() - 1);
-                                 }
-                             }
+
+                    // --- FIX: Use a proper JSON parser for robustness ---
+                    String[] urlArray = new String[]{"", "", ""};
+                    if (urlsJson != null && !urlsJson.isEmpty()) {
+                        try {
+                            JsonArray jsonArray = JsonParser.parseString(urlsJson).getAsJsonArray();
+                            for (int i = 0; i < jsonArray.size() && i < 3; i++) {
+                                JsonElement element = jsonArray.get(i);
+                                urlArray[i] = element.isJsonNull() ? "" : element.getAsString();
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error parsing URLS JSON: " + urlsJson);
+                            // Keep default empty strings in urlArray
                         }
                     }
 
-                    String u1 = urlArray.length > 0 ? urlArray[0] : "";
-                    String u2 = urlArray.length > 1 ? urlArray[1] : "";
-                    String u3 = urlArray.length > 2 ? urlArray[2] : "";
+                    String u1 = urlArray[0];
+                    String u2 = urlArray[1];
+                    String u3 = urlArray[2];
                     String analysis = rs.getString("LLMAnalysis");
                     sentiment s = new sentiment(symbol, company, sentimentValue, sentimentDate, u1, u2, u3, analysis);
                     results.add(s);
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
+        // Let SQLException bubble up to the handler
         return results;
     }
 
@@ -236,7 +233,7 @@ public class databaseInteractions {
         }
     }
 
-    public User getUserByEmail(String email) {
+    public User getUserByEmail(String email) throws SQLException {
         String sql = "SELECT email, name, picture FROM users WHERE email = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
@@ -245,13 +242,11 @@ public class databaseInteractions {
                     return new User(rs.getString("email"), rs.getString("name"), rs.getString("picture"));
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return null;
     }
 
-    public boolean followStock(String email, String stockSymbol) {
+    public boolean followStock(String email, String stockSymbol) throws SQLException {
         String sql = "INSERT INTO user_stocks (user_email, stock_symbol) VALUES (?, ?)";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
@@ -263,25 +258,23 @@ public class databaseInteractions {
                 System.out.println("User already follows stock. No action taken.");
                 return true;
             }
-            e.printStackTrace();
-            return false;
+            // --- FIX: Re-throw other SQLExceptions to be handled by the API layer ---
+            throw e;
         }
     }
 
-    public boolean unfollowStock(String email, String stockSymbol) {
+    public boolean unfollowStock(String email, String stockSymbol) throws SQLException {
         String sql = "DELETE FROM user_stocks WHERE user_email = ? AND stock_symbol = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
             stmt.setString(2, stockSymbol);
             int rows = stmt.executeUpdate();
             return rows > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 
-    public ArrayList<String> getFollowedStocks(String email) {
+    // --- FIX: This method now throws SQLException on failure instead of returning an empty list ---
+    public ArrayList<String> getFollowedStocks(String email) throws SQLException {
         ArrayList<String> followed = new ArrayList<>();
         String sql = "SELECT stock_symbol FROM user_stocks WHERE user_email = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -291,19 +284,15 @@ public class databaseInteractions {
                     followed.add(rs.getString("stock_symbol"));
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
+        // Let any SQLException bubble up to the apiHandler
         return followed;
     }
 
     public static void main(String[] args) {
         System.out.println("Running local database connection test...");
-
         databaseInteractions db = new databaseInteractions();
-
         boolean isConnected = db.testConnection();
-
         if (isConnected) {
             System.out.println("===================================================================");
             System.out.println("SUCCESS: Connection to Oracle Autonomous Database was successful!");
@@ -313,11 +302,6 @@ public class databaseInteractions {
             System.out.println("*****************************************************************");
             System.out.println("FAILURE: Could not connect to the database. Check console errors.");
             System.out.println("*****************************************************************");
-            System.out.println("Common issues:");
-            System.out.println("1. Is the DB_URL in your backend/.env file correct (TNS-less TLS format)?");
-            System.out.println("2. Is the DB_USER and DB_PASSWORD in your backend/.env file correct?");
-            System.out.println("3. Is your remote machine's public IP address (the one you SSH into) added to the Oracle ADB's Access Control List in OCI?");
-            System.out.println("4. Is your remote machine connected to the internet and can reach the ADB host?");
         }
     }
 }

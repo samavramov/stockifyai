@@ -5,15 +5,17 @@
     <div class="text-right">
       <button @click="goBack"
         class="mr-4 p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200">
-        ← Back
+        ← Back to Home
       </button>
     </div>
   </nav>
   <hr class=" border-gray-200">
-  <div class="bg-gray-50 px-6 py-6">
+  <div class="bg-gray-50 px-6 py-6 min-h-screen">
+
     <div class="mb-8">
+       <h2 class="text-3xl font-bold text-royalpurple-500 mb-4">Your Top Movers</h2>
       <div v-if="isLoading" class="flex overflow-x-auto gap-4 pb-4">
-        <div v-for="i in 5" :key="i" class="min-w-full bg-white rounded-xl shadow-lg p-4 animate-pulse">
+        <div v-for="i in 5" :key="i" class="min-w-full sm:min-w-[400px] bg-white rounded-xl shadow-lg p-4 animate-pulse">
           <div class="h-6 bg-gray-200 rounded mb-2"></div>
           <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
           <div class="h-8 bg-gray-200 rounded w-1/2 mx-auto"></div>
@@ -45,85 +47,29 @@
       </div>
 
       <div v-else class="text-center py-4 text-gray-500">
-        You don't have any followed stocks with movement data yet.
+        You don't have any followed stocks with recent data.
       </div>
     </div>
     <hr class="my-[32px] border-gray-200">
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:items-start">
+      
       <div class="lg:col-span-1">
         <div v-if="isLoading" class="text-center py-8">
-          <p class="text-gray-600">Loading followed stocks data...</p>
+          <p class="text-gray-600">Loading your followed stocks...</p>
         </div>
 
         <div v-else-if="loadingError" class="text-center py-8">
           <p class="text-red-600">Error loading data: {{ loadingError }}</p>
-          <button @click="loadFollowedStocksData"
+          <button @click="loadUserDataAndFollowedStocks"
             class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Retry</button>
         </div>
 
         <div v-else class="space-y-4">
-          <div class="mb-6 relative">
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:items-start">
-              <div class="lg:col-span-2">
-                <input v-model="searchQuery" type="text" placeholder="Search stocks to follow..."
-                  class="w-full border border-gray-300 rounded-lg px-4 py-2" @keyup.enter="addStock"
-                  @input="onInputChange" />
-                <ul v-if="searchQuery && filteredStocks.length && showSuggestions"
-                  class="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-60 overflow-y-auto shadow-md">
-                  <li v-for="stock in filteredStocks" :key="stock.symbol" @click="selectStock(stock.symbol)"
-                    class="px-4 py-2 cursor-pointer hover:bg-gray-100">
-                    {{ stock.symbol }} - {{ stock.name }}
-                  </li>
-                </ul>
-              </div>
-              <div class="lg:col-span-1">
-                <button :disabled="!searchQuery.trim()" @click="addStock"
-                  class="bg-royalpurple-500 text-white px-4 py-2 rounded-xl disabled:opacity-50">
-                  + Add Stock
-                </button>
-              </div>
-              <div ref="sortContainer" class="relative lg:col-span-1">
-                <button @click="toggleSortDropdown"
-                  class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-royalpurple-500 w-full justify-center">
-                  Sort By
-                  <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                    fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd"
-                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                      clip-rule="evenodd" />
-                  </svg>
-                </button>
-                <div v-if="showSortDropdown"
-                  class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                  <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                    <a href="#" @click.prevent="selectSort('symbol')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">Symbol</a>
-                    <a href="#" @click.prevent="selectSort('name')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">Company Name</a>
-                    <a href="#" @click.prevent="selectSort('dailySentiment')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">Daily Sentiment</a>
-                    <a href="#" @click.prevent="selectSort('tenDayAverage')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">10-Day Average</a>
-                    <a href="#" @click.prevent="selectSort('percentChange')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">% Change</a>
-                  </div>
-                </div>
-              </div>
-
+          <div v-if="followedStocks.length === 0" class="text-center py-8 text-gray-500">
+              <p>You are not following any stocks yet.</p>
+              <p class="text-sm mt-2">Go to the homepage to discover and follow stocks.</p>
             </div>
-            <div v-if="followedStocks.length === 0" class="text-center py-8 text-gray-500">
-              <p>You are not following any stocks yet. Use the search bar above to add some!</p>
-            </div>
-            <p v-if="isAddingStock" class="text-sm text-gray-500 mt-2">Adding stock...</p>
-            <p v-if="addStockError" class="text-sm text-red-600 mt-2">{{ addStockError }}</p>
-          </div>
-
           <draggable v-model="followedStocks" item-key="symbol" handle=".drag-handle" @end="onDragEnd" tag="div"
             class="space-y-4">
             <template #item="{ element: stock }">
@@ -134,8 +80,7 @@
                   <p class="text-sm text-gray-600">
                     Current Sentiment: {{ stock.sentimentValue !== null ? stock.sentimentValue.toFixed(2) : 'Loading...'
                     }}<br />
-                    Ten Day Average: {{ stock.tenDayAverage !== null ? stock.tenDayAverage.toFixed(2) : 'N/A' }}<br />
-                    Percent Change: {{ stock.percentChange !== null ? stock.percentChange.toFixed(2) + '%' : 'N/A' }}
+                    Ten Day Average: {{ stock.tenDayAverage !== null ? stock.tenDayAverage.toFixed(2) : 'N/A' }}
                   </p>
                 </div>
                 <div class="flex items-center space-x-2">
@@ -159,13 +104,14 @@
           </draggable>
         </div>
       </div>
+
       <div class="lg:col-span-2">
         <div class="bg-white rounded-xl p-6 shadow mb-8">
-          <h2 class="text-xl font-bold mb-4">Today's Sentiment Snapshot</h2>
+          <h2 class="text-xl font-bold mb-4">Sentiment Snapshot</h2>
           <apexchart type="bar" height="350" :options="barChartOptions" :series="barChartSeries" />
         </div>
         <div class="bg-white rounded-xl p-6 shadow">
-          <h2 class="text-xl font-bold mb-4">Sentiment Trends Over the Last 10 days
+          <h2 class="text-xl font-bold mb-4">10-Day Sentiment Trends
           </h2>
           <apexchart type="line" height="400" :options="chartOptions" :series="chartSeries" />
         </div>
@@ -203,66 +149,28 @@
 </template>
 
 <script>
-import VueApexCharts from 'vue3-apexcharts'
-import draggable from 'vuedraggable'
+import VueApexCharts from 'vue3-apexcharts';
+import draggable from 'vuedraggable';
 
 export default {
-  data() {
-    return {
-      date: new Date(),
-      searchQuery: '',
-      showSuggestions: true,
-      isAddingStock: false,
-      addStockError: null,
-      isLoading: true,
-      loadingError: null,
-      followedStocks: [], // This will hold the full stock objects for followed stocks
-      originalFollowedStocksOrder: [],
-      userEmail: '', // Removed localStorage init, will be fetched
-      userName: '',
-      userPicture: '',
-      API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
-      showSortDropdown: false,
-      allowedStocks: [
-        { symbol: 'AAPL', name: 'Apple Inc.' },
-        { symbol: 'QCOM', name: 'Qualcomm Incorporated' },
-        { symbol: 'AMD', name: 'Advanced Micro Devices' },
-        { symbol: 'AMZN', name: 'Amazon.com Inc.' },
-        { symbol: 'MU', name: 'Micron Technology Inc.' },
-        { symbol: 'GME', name: 'GameStop Corp.' },
-        { symbol: 'SOFI', name: 'SoFi Technologies Inc.' },
-        { symbol: 'NFLX', name: 'Netflix Inc.' },
-        { symbol: 'GOOGL', name: 'Alphabet Inc.' },
-        { symbol: 'DIS', name: 'Walt Disney Co.' },
-        { symbol: 'INTC', name: 'Intel Corporation' },
-        { symbol: 'META', name: 'Meta Platforms Inc.' },
-        { symbol: 'MSFT', name: 'Microsoft Corporation' },
-        { symbol: 'NVDA', name: 'NVIDIA Corporation' },
-        { symbol: 'ORCL', name: 'Oracle Corporation' },
-        { symbol: 'WBD', name: 'Warner Bros. Discovery Inc.' },
-        { symbol: 'PLTR', name: 'Palantir Technologies' },
-        { symbol: 'PYPL', name: 'PayPal Holdings Inc.' },
-        { symbol: 'RBLX', name: 'Roblox Corporation' },
-        { symbol: 'LCID', name: 'Lucid Group Inc.' },
-        { symbol: 'SNAP', name: 'Snapchat Inc.' },
-        { symbol: 'SHOP', name: 'Shopify Inc.' },
-        { symbol: 'SPOT', name: 'Spotify Technology SA' },
-        { symbol: 'COIN', name: 'Coinbase Global Inc.' },
-        { symbol: 'TSLA', name: 'Tesla Inc.' },
-        { symbol: 'BA', name: 'Boeing Company' },
-        { symbol: 'AVGO', name: 'Broadcom Inc.' },
-        { symbol: 'UBER', name: 'Uber Technologies Inc.' },
-        { symbol: 'ZOOM', name: 'Zoom Video Communications' }
-      ]
-    };
-  },
+  name: 'FollowingPage',
   components:
   {
     apexchart: VueApexCharts,
     draggable,
   },
+  data() {
+    return {
+      isLoading: true,
+      loadingError: null,
+      userEmail: '',
+      followedStocks: [], // Will hold full objects: { symbol, name, sentimentValue, ... }
+      API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+    };
+  },
   computed: {
     sortedFollowedStocks() {
+      // Sorts followed stocks by the absolute percentage change for the "Top Movers" display
       return [...this.followedStocks]
         .filter(stock => stock.percentChange !== null)
         .sort((a, b) => Math.abs(b.percentChange) - Math.abs(a.percentChange));
@@ -272,12 +180,12 @@ export default {
         name: 'Daily Sentiment',
         data: this.followedStocks.map(stock => ({
           x: stock.symbol,
-          y: stock.sentimentValue ?? 0 // Use a range if needed, e.g., [-1, y]
+          y: stock.sentimentValue ?? 0
         }))
       }];
     },
     barChartOptions() {
-      const today = this.date;
+      const today = new Date();
       return {
         chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true } },
         plotOptions: { bar: { distributed: true, borderRadius: 4, horizontal: false, } },
@@ -287,10 +195,7 @@ export default {
           if (value < -0.05) return '#dc2626';
           return '#6b7280';
         }),
-        xaxis: {
-          categories: this.followedStocks.map(stock => stock.symbol),
-          title: { text: 'Stock Symbols' }
-        },
+        xaxis: { categories: this.followedStocks.map(stock => stock.symbol) },
         yaxis: { min: -1, max: 1, title: { text: `Score For ${today.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` } },
         legend: { show: false },
       };
@@ -307,13 +212,13 @@ export default {
     },
     chartSeries() {
       return this.followedStocks
-        .filter(stock => stock.lastTen && stock.lastTen.length)
+        .filter(stock => stock.lastTen && stock.lastTen.length > 0)
         .map(stock => ({
           name: stock.symbol,
           data: stock.lastTen.slice().reverse().map((value, idx) => ({
-              x: this.lastTenDates[idx] || new Date().toISOString().slice(0,10),
-              y: value
-            }))
+            x: this.lastTenDates[idx] || new Date().toISOString().slice(0,10),
+            y: value
+          }))
         }));
     },
     chartOptions() {
@@ -326,126 +231,57 @@ export default {
         legend: { position: 'bottom' }
       };
     },
-    filteredStocks() {
-      if (!this.searchQuery) return [];
-      const query = this.searchQuery.trim().toUpperCase();
-      return this.allowedStocks.filter(stock =>
-        stock.symbol.includes(query) || stock.name.toUpperCase().includes(query)
-      );
-    }
   },
   async mounted() {
-    await this.loadUserDataAndFollowedStocks();
-    document.addEventListener('click', this.handleOutsideClick);
-  },
-  beforeUnmount() {
-    document.removeEventListener('click', this.handleOutsideClick);
+    await this.loadPageData();
   },
   methods: {
-    // FIX: A single handler to close dropdowns when clicking outside
-    handleOutsideClick(event) {
-      // Check for the sort dropdown
-      const sortContainer = this.$refs.sortContainer;
-      if (this.showSortDropdown && sortContainer && !sortContainer.contains(event.target)) {
-        this.showSortDropdown = false;
-      }
-    },
-    async loadUserDataAndFollowedStocks() {
+    async loadPageData() {
       this.isLoading = true;
       this.loadingError = null;
       try {
+        // Step 1: Get user email from session
         const sessionRes = await fetch(`${this.API_BASE_URL}/me`, { credentials: 'include' });
-        if (!sessionRes.ok) throw new Error(`Session error: ${sessionRes.status}`);
+        if (!sessionRes.ok) throw new Error('Your session has expired. Please log in again.');
         const sessionData = await sessionRes.json();
-        
-        if (!sessionData.user || !sessionData.user.email) {
-          throw new Error('Invalid user session');
-        }
-
+        if (!sessionData.user || !sessionData.user.email) throw new Error('Invalid user session data.');
         this.userEmail = sessionData.user.email;
-        this.userName = sessionData.user.name;
-        this.userPicture = sessionData.user.picture;
-        
-        await this.loadFollowedStocksData();
 
-      } catch (err) {
-        console.error('Failed to load user data:', err);
-        this.loadingError = err.message;
-        // Optional: Redirect to login if session is the issue
-        if (err.message.includes('401') || err.message.includes('Session')) {
-            this.$router.push('/login');
-        }
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    async loadFollowedStocksData() {
-      try {
+        // Step 2: Get the list of followed stock symbols
         const symbolsResponse = await fetch(`${this.API_BASE_URL}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
-        if (!symbolsResponse.ok) throw new Error(`Failed to get followed stocks: ${symbolsResponse.status}`);
+        if (!symbolsResponse.ok) throw new Error(`Could not fetch followed stocks list: ${symbolsResponse.statusText}`);
         const followedSymbols = await symbolsResponse.json();
 
-        // Fetch details for only the stocks the user follows
+        if (followedSymbols.length === 0) {
+          this.followedStocks = [];
+          this.isLoading = false;
+          return;
+        }
+
+        // Step 3: Fetch details for ONLY the followed stocks in parallel
         const detailPromises = followedSymbols.map(symbol =>
-          fetch(`${this.API_BASE_URL}/api/sentiments?symbol=${symbol}&limit=10`).then(res => {
-            if (!res.ok) throw new Error(`Failed to get details for ${symbol}`);
+          fetch(`${this.API_BASE_URL}/api/sentiments?symbol=${symbol}&limit=1`).then(res => {
+            if (!res.ok) {
+              console.warn(`Could not fetch details for ${symbol}. It might not have sentiment data yet.`);
+              return null; // Return null for failed fetches to not break Promise.all
+            }
             return res.json();
           })
         );
         
         const detailedResponses = await Promise.all(detailPromises);
         
-        this.followedStocks = detailedResponses.flat().map(stockData => ({
-          symbol: stockData.stockSymbol,
-          name: stockData.companyName || this.getStockName(symbol) || 'N/A',
-          tenDayAverage: stockData.tenDayAverage ?? null,
-          percentChange: stockData.percentChange ?? null,
-          sentimentValue: stockData.sentimentValue ?? null,
-          lastTen: Array.isArray(stockData.lastTen) ? stockData.lastTen : [],
-        }));
-        
-        this.originalFollowedStocksOrder = [...this.followedStocks];
+        // Step 4: Populate the local data array
+        this.followedStocks = detailedResponses
+            .flat() // The API returns an array, so flatten the array of arrays
+            .filter(stockData => stockData); // Filter out any null responses from failed fetches
 
       } catch (error) {
-        console.error("Failed to load followed stocks data:", error);
-        this.loadingError = `Failed to load data. Please try again. (${error.message})`;
+        console.error("Failed to load followed stocks page data:", error);
+        this.loadingError = error.message;
         this.followedStocks = [];
-      }
-    },
-    async addStock() {
-      this.addStockError = null;
-      const symbol = this.searchQuery.trim().toUpperCase();
-      if (!symbol) return;
-
-      const isValid = this.allowedStocks.some(s => s.symbol === symbol);
-      if (!isValid) { this.addStockError = `${symbol} is not a valid stock.`; return; }
-
-      if (this.followedStocks.some(s => s.symbol === symbol)) {
-        this.addStockError = `${symbol} is already followed.`; return;
-      }
-
-      this.isAddingStock = true;
-      try {
-        const followResponse = await fetch(`${this.API_BASE_URL}/api/followStock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
-        });
-        if (!followResponse.ok) throw new Error(`Failed to follow stock: ${followResponse.status}`);
-        
-        // Optimistic UI update: Add a placeholder, then reload just that stock's data.
-        const newStockInfo = this.allowedStocks.find(s => s.symbol === symbol);
-        this.followedStocks.push({ ...newStockInfo, sentimentValue: null, tenDayAverage: null, percentChange: null, lastTen: [] });
-        this.searchQuery = '';
-        
-        // Optionally, you can reload all data in the background if needed
-        this.loadFollowedStocksData();
-
-      } catch (error) {
-        this.addStockError = `Error following stock: ${error.message}`;
       } finally {
-        this.isAddingStock = false;
+        this.isLoading = false;
       }
     },
     async removeStock(symbol) {
@@ -459,28 +295,17 @@ export default {
 
         if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
         
-        // Optimistic UI update
+        // Optimistic UI update: Instantly remove the stock from the local list
         this.followedStocks = this.followedStocks.filter(s => s.symbol !== symbol);
-        this.originalFollowedStocksOrder = [...this.followedStocks];
 
       } catch (error) {
         console.error("Failed to remove stock:", error);
+        alert(`Error: ${error.message}`);
       }
     },
-    getStockName(symbol) {
-      const stock = this.allowedStocks.find(s => s.symbol === symbol);
-      return stock ? stock.name : null;
-    },
-    onInputChange() {
-      this.addStockError = null;
-      this.showSuggestions = true;
-    },
-    selectStock(symbol) {
-      this.searchQuery = symbol;
-      this.showSuggestions = false;
-    },
-    onDragEnd(event) {
-      // You can save the order to the backend if needed
+    onDragEnd() {
+      // You can implement saving the new order to the backend here if you wish
+      console.log('New order:', this.followedStocks.map(s => s.symbol));
     },
     goBack() {
       this.$router.push('/home');
@@ -489,19 +314,9 @@ export default {
       this.$router.push(`/stock/${symbol}`);
     },
     sentimentClass(value) {
-      if (value === null) return '';
+      if (value === null) return 'text-gray-400';
       return value >= 0 ? 'text-green-600' : 'text-red-600';
     },
-    toggleSortDropdown() {
-      this.showSortDropdown = !this.showSortDropdown;
-    },
-    selectSort(column) {
-      this.sortTable(column);
-      this.showSortDropdown = false;
-    },
-    sortTable(criteria) {
-      // Your existing sorting logic
-    }
   }
 };
 </script>

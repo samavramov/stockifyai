@@ -233,7 +233,7 @@
               <div v-else-if="loadingError" class="text-center py-8">
                 <p class="text-red-600">{{ loadingError }}</p>
               </div>
-              <div v-else-if="followedStocks.length === 0" class="text-center py-8 text-gray-500">
+              <div v-else-if="followedStocksWithDetails.length === 0" class="text-center py-8 text-gray-500">
                 <p>You are not following any stocks yet.</p>
               </div>
               <div v-else class="space-y-4">
@@ -355,7 +355,7 @@ export default {
       addStockError: null,
       isLoading: true,
       loadingError: null,
-      // FIX: This now only holds an array of strings (stock symbols)
+      // This now only holds an array of strings (stock symbols)
       followedStockSymbols: [],
     };
   },
@@ -384,7 +384,7 @@ export default {
         .sort((a, b) => Math.abs(b.percentChange) - Math.abs(a.percentChange))
         .slice(0, 5);
     },
-    // FIX: A new computed property to get the full objects for followed stocks
+    // A new computed property to get the full objects for followed stocks
     followedStocksWithDetails() {
       return this.followedStockSymbols
         .map(symbol => this.stocks.find(s => s.symbol === symbol))
@@ -401,7 +401,7 @@ export default {
       return dates;
     },
     chartSeries() {
-      // FIX: This now uses the new computed property for followed stocks
+      // This now uses the new computed property for followed stocks
       return this.followedStocksWithDetails
         .filter(stock => stock.lastTen && stock.lastTen.length > 0)
         .map(stock => ({
@@ -439,14 +439,14 @@ export default {
     }
   },
   async mounted() {
-    // FIX: Streamlined initial data loading
+    // Streamlined initial data loading
     this.isLoading = true;
     await this.loadUserData(); // Gets user info and populates followedStockSymbols
     await this.loadAllSentiments(); // Gets data for all 29 stocks
     this.isLoading = false;
   },
   methods: {
-    // FIX: The helper now checks the simple array of symbols, which is much faster.
+    // The helper now checks the simple array of symbols, which is much faster.
     isStockFollowed(symbol) {
       return this.followedStockSymbols.includes(symbol);
     },
@@ -492,7 +492,7 @@ export default {
         });
         if (!response.ok) throw new Error(`Server responded with ${response.status}`);
         
-        // FIX: Optimistic UI update for instant feedback.
+        // Optimistic UI update for instant feedback.
         this.followedStockSymbols.push(symbol);
 
       } catch (error) {
@@ -511,7 +511,7 @@ export default {
         });
         if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
         
-        // FIX: Optimistic UI update for instant feedback.
+        // Optimistic UI update for instant feedback.
         const index = this.followedStockSymbols.indexOf(symbol);
         if (index > -1) {
           this.followedStockSymbols.splice(index, 1);
@@ -548,7 +548,7 @@ export default {
       } catch (err) {
         console.error('Network error during logout request:', err);
       } finally {
-        // FIX: Corrected the invalid path which would have caused an error.
+        // Corrected the invalid path which would have caused an error.
         this.$router.push('/login');
       }
     },
@@ -574,7 +574,6 @@ export default {
         this.loadingError = 'Could not load market data. Please refresh.';
       }
     },
-    // ---- Methods below are mostly for UI and do not need changes ----
     toggleSortDropdown() {
       this.showSortDropdown = !this.showSortDropdown;
       if (this.showSortDropdown) this.showDropdown = false;
