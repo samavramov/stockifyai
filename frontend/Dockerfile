@@ -17,13 +17,11 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Serve the built application using a lightweight web server
-FROM nginx:alpine as production-stage
-
-# Copy the built assets from the build-stage to Nginx's web root
+FROM nginx:stable-alpine
 COPY --from=build-stage /app/dist /usr/share/nginx/html
+# --- NEW/UPDATED LINE: Copy your custom Nginx configuration file ---
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# --- END NEW/UPDATED LINE ---
 
-# Expose the port Nginx will listen on
 EXPOSE 80
-
-# Command to start Nginx when the container runs
 CMD ["nginx", "-g", "daemon off;"]
