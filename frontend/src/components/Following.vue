@@ -259,33 +259,7 @@ export default {
         }
 
         // Step 3: Fetch details for ONLY the followed stocks in parallel
-        const detailPromises = followedSymbols.map(symbol =>
-          fetch(`${this.API_BASE_URL}/api/sentiments?symbol=${symbol}&limit=1`).then(res => {
-            if (!res.ok) {
-              console.warn(`Could not fetch details for ${symbol}. It might not have sentiment data yet.`);
-              return null; // Return null for failed fetches to not break Promise.all
-            }
-            return res.json();
-          })
-        );
-        
-        const detailedResponses = await Promise.all(detailPromises);
-        
-        // Step 4: Populate the local data array by cleaning and mapping the API response
-        this.followedStocks = detailedResponses
-            .flat() // The API returns an array for each symbol, so flatten [[{..}], [{..}]] to [{..}, {..}]
-            .filter(stockData => stockData) // Filter out any null responses from failed fetches
-            .map(apiStock => ({
-              // Map API fields (e.g., stockSymbol) to the fields the template expects (e.g., symbol)
-              symbol: apiStock.stockSymbol,
-              name: apiStock.companyName,
-              sentimentValue: apiStock.sentimentValue,
-              tenDayAverage: apiStock.tenDayAverage,
-              percentChange: apiStock.percentChange,
-              lastTen: apiStock.lastTen || []
-            }));
-
-      } catch (error) {
+      }catch (error) {
         console.error("Failed to load followed stocks page data:", error);
         this.loadingError = error.message;
         this.followedStocks = [];
