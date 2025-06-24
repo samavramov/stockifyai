@@ -187,80 +187,49 @@
           </div>
         </div>
         <div v-if="activeTab === 'followed'" class="space-y-6">
-          <div class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ userName }}'s Stocks</h2>
+           <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Your Followed Stocks</h2>
             <p class="text-gray-600">
-              In-depth analysis available on the
+              A detailed view of your portfolio. For more charts, visit the
               <router-link to="/following"
                 class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-blue-500 font-semibold hover:underline">
-                following page
-              </router-link>
+                dedicated following page
+              </router-link>.
             </p>
           </div>
-        </div>
-        <div v-if="activeTab === 'followed'">
-          <div class="mb-6 relative item-center">
-            <div class="grid grid-cols-1 md:grid-cols-9 gap-4 items-center">
-              <div class="lg:col-span-8">
-                <input v-model="searchQuery" type="text" placeholder="Search stocks to follow..."
-                  class="w-full border border-gray-300 rounded-lg px-4 py-2" @keyup.enter="addStockFromInput"
-                  @input="onInputChange" />
-                <ul v-if="searchQuery && filteredStocks.length && showSuggestions"
-                  class="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-60 overflow-y-auto shadow-md">
-                  <li v-for="stock in filteredStocks" :key="stock.symbol" @click="selectStock(stock.symbol)"
-                    class="px-4 py-2 cursor-pointer hover:bg-gray-100">
-                    {{ stock.symbol }} - {{ stock.name }}
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <div class=" text-right">
-                  <button :disabled="!searchQuery.trim()" @click="addStockFromInput"
-                    class="bg-royalpurple-500 text-white px-4 py-2 rounded-xl disabled:opacity-50">
-                    + Add Stock
-                  </button>
+            <div v-if="isLoading" class="text-center py-8">
+                <p class="text-gray-600">Loading your stocks...</p>
+            </div>
+            <div v-else-if="followedStocksWithDetails.length === 0" class="text-center py-8 text-gray-500">
+                <p>You are not following any stocks yet. Click the 'All Stocks' tab to find stocks to follow.</p>
+            </div>
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div v-for="stock in followedStocksWithDetails" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
+                    class="bg-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-xl font-bold text-gray-900">{{ stock.symbol }}</div>
+                            <div class="text-sm text-gray-600 mb-2">{{ stock.name }}</div>
+                        </div>
+                        <button @click.stop="removeStock(stock.symbol)" class="text-gray-400 hover:text-red-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-sm">Daily Sentiment: 
+                            <span :class="sentimentClass(stock.dailySentiment)" class="font-semibold">{{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}</span>
+                        </div>
+                        <div class="text-sm">10-Day Avg: 
+                             <span :class="sentimentClass(stock.tenDayAverage)" class="font-semibold">{{ stock.tenDayAverage != null ? stock.tenDayAverage.toFixed(2) : '—' }}</span>
+                        </div>
+                        <div class="text-sm">% Change: 
+                            <span :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">{{ stock.percentChange != null ? stock.percentChange.toFixed(2) + '%' : '—' }}</span>
+                        </div>
+                    </div>
                 </div>
-              </div>
-              <p v-if="isAddingStock" class="text-sm text-gray-500 mt-2">Adding stock...</p>
-              <p v-if="addStockError" class="text-sm text-red-600 mt-2">{{ addStockError }}</p>
             </div>
-          </div>
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:items-start">
-            <div class="lg:col-span-1">
-              <div v-if="isLoading" class="text-center py-8">
-                <p class="text-gray-600">Loading followed stocks...</p>
-              </div>
-              <div v-else-if="loadingError" class="text-center py-8">
-                <p class="text-red-600">{{ loadingError }}</p>
-              </div>
-              <div v-else-if="followedStocksWithDetails.length === 0" class="text-center py-8 text-gray-500">
-                <p>You are not following any stocks yet.</p>
-              </div>
-              <div v-else class="space-y-4">
-                <div v-for="stock in followedStocksWithDetails" :key="stock.symbol"
-                  @click="goToStockDetail(stock.symbol)"
-                  class="bg-white shadow rounded-xl p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-                  <div>
-                    <h2 class="text-lg font-semibold">{{ stock.symbol }} - {{ stock.name }}</h2>
-                    <p class="text-sm text-gray-600">Sentiment: {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : 'N/A' }}</p>
-                  </div>
-                  <button @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                      stroke="currentColor" class="size-6">
-                      <path stroke-linecap="round" stroke-linejoin="round"
-                        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="lg:col-span-2">
-              <div class="bg-white rounded-xl p-6 shadow">
-                <h2 class="text-xl font-bold mb-4">Followed Stocks - 10 Day Sentiment</h2>
-                <apexchart type="line" height="400" :options="chartOptions" :series="chartSeries" />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </main>
@@ -381,7 +350,7 @@ export default {
     trendingStocks() {
       return [...this.stocks]
         .filter(stock => stock.percentChange != null)
-        .sort((a, b) => Math.abs(b.percentChange) - Math.abs(a.percentChange))
+        .sort((a, b) => Math.abs(b.percentChange ?? 0) - Math.abs(a.percentChange ?? 0))
         .slice(0, 5);
     },
     // A new computed property to get the full objects for followed stocks

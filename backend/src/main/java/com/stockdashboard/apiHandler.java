@@ -10,29 +10,20 @@ import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 public class apiHandler implements HttpHandler {
 
-    // FIX: Add member variables for dependencies
     private final String frontendUrl;
     private final databaseInteractions db;
-    private final ObjectMapper mapper = new ObjectMapper(); // Create one mapper to reuse
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    // List of stocks to process
     private static final String[] SYMBOLS = {
             "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "NFLX", "CRM", "ORCL",
             "ADBE", "INTC", "AMD", "PYPL", "UBER", "SPOT", "ZOOM", "TWTR", "SNAP", "SQ",
             "SHOP", "ROKU", "PINS", "DOCU", "PLTR", "COIN", "HOOD", "RBLX", "U", "DDOG"
     };
 
-    /**
-     * FIX: Updated constructor to accept a databaseInteractions object.
-     * This is more efficient than creating a new one for every request.
-     * @param frontendUrl The allowed origin for CORS requests.
-     * @param db The shared database interaction object.
-     */
     public apiHandler(String frontendUrl, databaseInteractions db) {
         this.frontendUrl = frontendUrl;
         this.db = db;
@@ -43,13 +34,11 @@ public class apiHandler implements HttpHandler {
         String method = exchange.getRequestMethod();
         String path = exchange.getRequestURI().getPath();
 
-        // OPTIONS request is handled first
         if ("OPTIONS".equalsIgnoreCase(method)) {
             handleOptionsRequest(exchange);
             return;
         }
 
-        // Set CORS for all actual requests
         setCorsHeaders(exchange);
 
         try {
@@ -87,49 +76,78 @@ public class apiHandler implements HttpHandler {
                 sendMethodNotAllowed(exchange);
             }
         } catch (Exception e) {
-            // Catch-all for any unexpected errors in handlers
             System.err.println("An unexpected error occurred while handling request: " + path);
             e.printStackTrace();
             sendJsonError(exchange, 500, "Internal Server Error");
         }
     }
 
-    // --- Request Handling Methods ---
-
     private void handleGetSentiments(HttpExchange exchange) throws IOException {
+        // FIX: Check for query parameters to handle single vs. all stock requests
+        String symbolParam = getQueryParam(exchange.getRequestURI().getQuery(), "symbol");
+        String limitParam = getQueryParam(exchange.getRequestURI().getQuery(), "limit");
+        int limit = (limitParam != null) ? Integer.parseInt(limitParam) : 10;
+
         try {
             ArrayList<sentiment> sentiments = new ArrayList<>();
-            for (String symbol : SYMBOLS) {
-                // Now calling the updated method which can throw SQLException
-                ArrayList<sentiment> lastTen = db.getLatestSentimentsByStockSymbol(symbol, 10);
-                if (lastTen != null && !lastTen.isEmpty()) {
+
+            if (symbolParam != null && !symbolParam.isEmpty()) {
+                // --- Case 1: A specific symbol is requested (for Following.vue) ---
+                sentiments = db.getLatestSentimentsByStockSymbol(symbolParam, limit);
+                // The sentiment object from the DB doesn't have these calculated, so we do it here.
+                if (!sentiments.isEmpty()) {
                     ArrayList<Double> lastTenValues = new ArrayList<>();
                     double sum = 0.0;
-                    Double[] recent = new Double[2];
-                    double percentChange = 0.0;
-
-                    for (sentiment s : lastTen) {
+                    for(sentiment s : sentiments) {
                         lastTenValues.add(s.sentimentValue);
                         sum += s.sentimentValue;
                     }
-                    for (int i = 0; i < lastTen.size() && i < 2; i++) {
-                        recent[i] = lastTen.get(i).sentimentValue;
-                    }
 
-                    if (recent[0] != null && recent[1] != null && recent[1] != 0) {
-                        percentChange = ((recent[0] - recent[1]) / Math.abs(recent[1])) * 100.0;
+                    double percentChange = 0.0;
+                    if(sentiments.size() > 1) {
+                         double recent = sentiments.get(0).sentimentValue;
+                         double previous = sentiments.get(1).sentimentValue;
+                         if (previous != 0) {
+                            percentChange = ((recent - previous) / Math.abs(previous)) * 100.0;
+                         }
                     }
-
-                    double averageSentiment = sum / lastTen.size();
-                    sentiment mostRecent = lastTen.get(0);
-                    mostRecent.tenDayAverage = averageSentiment;
+                    
+                    sentiment mostRecent = sentiments.get(0);
+                    mostRecent.tenDayAverage = sum / sentiments.size();
                     mostRecent.percentChange = percentChange;
                     mostRecent.lastTen = lastTenValues;
-                    sentiments.add(mostRecent);
+                }
+            } else {
+                // --- Case 2: No symbol is requested, get all (for Home.vue) ---
+                for (String symbol : SYMBOLS) {
+                    ArrayList<sentiment> lastTen = db.getLatestSentimentsByStockSymbol(symbol, 10);
+                    if (lastTen != null && !lastTen.isEmpty()) {
+                        ArrayList<Double> lastTenValues = new ArrayList<>();
+                        double sum = 0.0;
+                        for (sentiment s : lastTen) {
+                            lastTenValues.add(s.sentimentValue);
+                            sum += s.sentimentValue;
+                        }
+
+                        double percentChange = 0.0;
+                        if (lastTen.size() > 1) {
+                            double recent = lastTen.get(0).sentimentValue;
+                            double previous = lastTen.get(1).sentimentValue;
+                            if (previous != 0) {
+                                percentChange = ((recent - previous) / Math.abs(previous)) * 100.0;
+                            }
+                        }
+
+                        double averageSentiment = sum / lastTen.size();
+                        sentiment mostRecent = lastTen.get(0);
+                        mostRecent.tenDayAverage = averageSentiment;
+                        mostRecent.percentChange = percentChange;
+                        mostRecent.lastTen = lastTenValues;
+                        sentiments.add(mostRecent);
+                    }
                 }
             }
 
-            // FIX: Use ObjectMapper for robust JSON conversion
             String json = mapper.writeValueAsString(sentiments);
             sendJsonResponse(exchange, 200, json);
 
@@ -167,7 +185,6 @@ public class apiHandler implements HttpHandler {
     }
 
     public void handleSaveUser(HttpExchange exchange) throws IOException {
-        // This method was already fairly robust.
         try {
             String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             JsonNode root = mapper.readTree(requestBody);
@@ -195,7 +212,6 @@ public class apiHandler implements HttpHandler {
             String email = root.path("email").asText();
             String stock = root.path("stockSymbol").asText();
 
-            // FIX: Catch the SQLException that can now be thrown
             boolean success = db.followStock(email, stock);
             if (success) {
                 sendJsonResponse(exchange, 200, "{\"status\":\"followed\"}");
@@ -205,7 +221,6 @@ public class apiHandler implements HttpHandler {
         } catch (SQLException e) {
             System.err.println("Database error in handleFollowStock:");
             e.printStackTrace();
-            // Check for foreign key violation specifically
             if (e.getErrorCode() == 2291) {
                  sendJsonError(exchange, 400, "Cannot follow stock, user does not exist.");
             } else {
@@ -221,12 +236,10 @@ public class apiHandler implements HttpHandler {
             String email = root.path("email").asText();
             String stock = root.path("stockSymbol").asText();
             
-            // FIX: Catch the SQLException that can now be thrown
             boolean success = db.unfollowStock(email, stock);
             if (success) {
                 sendJsonResponse(exchange, 200, "{\"status\":\"unfollowed\"}");
             } else {
-                // This case might happen if the stock was already unfollowed
                 sendJsonResponse(exchange, 200, "{\"status\":\"already unfollowed or not found\"}");
             }
         } catch (SQLException e) {
@@ -244,7 +257,6 @@ public class apiHandler implements HttpHandler {
         }
 
         try {
-            // FIX: Catch the SQLException that can now be thrown
             ArrayList<String> followedStocks = db.getFollowedStocks(email);
             String response = mapper.writeValueAsString(followedStocks);
             sendJsonResponse(exchange, 200, response);
@@ -290,7 +302,6 @@ public class apiHandler implements HttpHandler {
 
     private void sendJsonError(HttpExchange exchange, int statusCode, String message) throws IOException {
         String error = String.format("{\"error\":\"%s\"}", message.replace("\"", "\\\""));
-        // No need to set CORS headers here, as the main handle() method does it now.
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.sendResponseHeaders(statusCode, error.length());
         try (OutputStream os = exchange.getResponseBody()) {
