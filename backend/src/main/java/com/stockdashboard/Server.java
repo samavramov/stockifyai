@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpServer;
-import io.github.cdimascio.dotenv.Dotenv; // Import the Dotenv library
+import io.github.cdimascio.dotenv.Dotenv;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -19,41 +19,27 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Properties;
+import java.sql.SQLException; // Only needed here now
 
 public class Server {
     private static final Map<String, JsonObject> activeSessions = new ConcurrentHashMap<>();
     private static final String GOOGLE_CLIENT_ID;
     private static final String GOOGLE_CLIENT_SECRET;
     private static final String BACKEND_URL;
-    private static final String FRONTEND_URL; // Declare FRONTEND_URL
+    private static final String FRONTEND_URL;
 
     static {
         Dotenv dotenv = null;
         String clientId = null;
         String clientSecret = null;
         String backendURL = null;
-        String frontendURL = null; // Initialize here
+        String frontendURL = null;
 
         try {
-            dotenv = Dotenv.configure()
-                    .directory("backend")
-                    .load();
+            dotenv = Dotenv.configure().directory("backend").load();
         } catch (io.github.cdimascio.dotenv.DotenvException e) {
             System.err.println("Error loading .env file: " + e.getMessage());
-            System.err.println("Please ensure backend/.env exists and is properly formatted.");
-            // Fallback to system environment variables if .env is not found
+            System.err.println("Falling back to system environment variables.");
             clientId = System.getenv("GOOGLE_CLIENT_ID");
             clientSecret = System.getenv("GOOGLE_CLIENT_SECRET");
             backendURL = System.getenv("BACKEND_URL");
@@ -64,96 +50,52 @@ public class Server {
             clientId = dotenv.get("GOOGLE_CLIENT_ID");
             clientSecret = dotenv.get("GOOGLE_CLIENT_SECRET");
             backendURL = dotenv.get("BACKEND_URL");
-            frontendURL = dotenv.get("FRONTEND_URL"); // Load from .env
-            System.out.println("loaded from dotenv");
+            frontendURL = dotenv.get("FRONTEND_URL");
+            System.out.println("Loaded environment variables from .env file.");
         }
 
         GOOGLE_CLIENT_ID = clientId;
         GOOGLE_CLIENT_SECRET = clientSecret;
         BACKEND_URL = backendURL;
-        FRONTEND_URL = frontendURL; // Assign the loaded value
+        FRONTEND_URL = frontendURL;
 
-        // Critical check for all required environment variables
         if (GOOGLE_CLIENT_ID == null || GOOGLE_CLIENT_SECRET == null || BACKEND_URL == null || FRONTEND_URL == null) {
             System.err.println(
-                    "CRITICAL ERROR: One or more environment variables are missing (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, BACKEND_URL, FRONTEND_URL). Please set them in your .env file or system environment. Exiting.");
+                    "CRITICAL ERROR: One or more environment variables are missing. Exiting.");
             System.exit(1);
         }
 
         System.out.println("Google Client ID loaded successfully.");
         System.out.println("Backend URL loaded successfully: " + BACKEND_URL);
-        System.out.println("Frontend URL loaded successfully: " + FRONTEND_URL); // Confirm load
-    }
-
-    private static void connorcl() {
-        // --- Configuration ---
-        // You no longer need the walletPath or
-        // System.setProperty("oracle.net.tns_admin") for TLS-only
-        // String walletPath = "/home/opc/oracle_wallet"; // <--- REMOVE THIS LINE
-
-        String dbUser = "ADMIN"; // Your Autonomous Database username
-        String dbPassword = "@HJR#E73fRH4<1K*r48iDx&+{2"; // Your DB USER PASSWORD
-
-        // **IMPORTANT:** Replace this with the TLS connection string copied from the
-        // OCI Console.
-        // Example format:
-        // jdbc:oracle:thin:@(description=(retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1521)(host=adb.region.oraclecloud.com))(connect_data=(service_name=your_servicename_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
-        String jdbcUrl = "jdbc:oracle:thin:@(description=(retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1521)(host=adb.us-phoenix-1.oraclecloud.com))(connect_data=(service_name=gaa5388eccd29ab_stockifydb_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))";
-
-        Connection connection = null;
-        try {
-            Class.forName("oracle.jdbc.OracleDriver");
-
-            Properties props = new Properties();
-            props.setProperty("user", dbUser);
-            props.setProperty("password", dbPassword);
-            // Optionally, set SSL properties directly if not included in the JDBC URL
-            // props.setProperty("oracle.net.ssl_version", "1.2"); // Or "1.3" if your DB
-            // and JDK support it
-            // props.setProperty("oracle.net.ssl_server_dn_match", "true"); // Recommended
-            // for server identity verification
-
-            System.out.println("Attempting to connect to Oracle Autonomous Database (TLS only)...");
-            System.out.println("JDBC URL: " + jdbcUrl);
-
-            // No longer needed for TLS-only connections
-            // System.setProperty("oracle.net.tns_admin", walletPath);
-            // System.setProperty("javax.net.debug", "ssl,handshake"); // Keep for debugging
-            // if needed
-
-            connection = DriverManager.getConnection(jdbcUrl, props);
-
-            if (connection != null) {
-                System.out.println("Successfully connected to Oracle Autonomous Database!");
-            }
-
-        } catch (ClassNotFoundException e) {
-            System.err.println("Oracle JDBC Driver or companion JARs not found. " +
-                    "Make sure ojdbcX.jar is in your classpath. Companion JARs (oraclepki.jar, osdt_core.jar, osdt_cert.jar) are usually only needed for wallet/mTLS connections.");
-            e.printStackTrace();
-        } catch (SQLException e) {
-            System.err.println("SQL Exception: " + e.getMessage());
-            System.err.println("SQL State: " + e.getSQLState());
-            System.err.println("Error Code: " + e.getErrorCode());
-            e.printStackTrace();
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.close();
-                    System.out.println("Connection closed.");
-                } catch (SQLException e) {
-                    System.err.println("Error closing connection: " + e.getMessage());
-                }
-            }
-        }
+        System.out.println("Frontend URL loaded successfully: " + FRONTEND_URL);
     }
 
     public static void main(String[] args) throws IOException {
-        connorcl();
-        int port = 8001; // This port is for the *backend server*
+        // --- 1. SETUP DATABASE CONNECTION FIRST ---
+        // Create a single, shared database interactions object.
+        final databaseInteractions db = new databaseInteractions();
+
+        // Test the connection. If it fails, exit the application.
+        System.out.println("Connecting to the database and initializing schema...");
+        if (!db.testConnection()) {
+            System.err.println("CRITICAL: Database connection failed. The server will not start.");
+            System.exit(1);
+        }
+        System.out.println("Database connection successful.");
+
+        // Initialize the schema (creates tables if they don't exist).
+        db.initializeSchema();
+        System.out.println("Schema initialization complete.");
+
+        // --- 2. CONFIGURE AND START THE HTTP SERVER ---
+        int port = 8001;
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         ExecutorService threadPool = Executors.newFixedThreadPool(10);
         server.setExecutor(threadPool);
+
+        // You will need to update apiHandler to accept the 'db' object
+        // Example: final apiHandler apiHandler = new apiHandler(FRONTEND_URL, db);
+        // For now, assuming apiHandler creates its own db instance if needed.
         apiHandler apiHandler = new apiHandler(FRONTEND_URL);
         server.createContext("/api/sentiments", apiHandler);
         server.createContext("/api/saveUser", apiHandler);
@@ -181,7 +123,6 @@ public class Server {
         server.createContext("/auth/google/callback", exchange -> {
             try {
                 if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                    // *** Use FRONTEND_URL for CORS headers ***
                     addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS",
                             "Content-Type, Authorization");
                     exchange.sendResponseHeaders(204, -1);
@@ -199,7 +140,6 @@ public class Server {
                     }
                 }
                 if (code == null) {
-                    System.err.println("Error: Authorization code missing from callback.");
                     exchange.sendResponseHeaders(400, -1);
                     exchange.close();
                     return;
@@ -221,8 +161,6 @@ public class Server {
                 JsonObject tokenJson = JsonParser.parseString(tokenResponse.body()).getAsJsonObject();
 
                 if (!tokenJson.has("access_token")) {
-                    System.err
-                            .println("Error: Access token not received from Google. Response: " + tokenResponse.body());
                     exchange.sendResponseHeaders(401, -1);
                     exchange.close();
                     return;
@@ -250,31 +188,29 @@ public class Server {
                 sessionUser.addProperty("picture", picture);
                 activeSessions.put(sessionToken, sessionUser);
 
+                // --- FIX: Direct database call to save the user ---
+                // This replaces the broken self-API call and resolves the PKIX & ORA-02291 errors.
                 threadPool.submit(() -> {
                     try {
-                        JsonObject saveUserJson = new JsonObject();
-                        saveUserJson.addProperty("email", email);
-                        saveUserJson.addProperty("name", name);
-                        saveUserJson.addProperty("picture", picture);
-
-                        HttpRequest saveUserRequest = HttpRequest.newBuilder()
-                                .uri(URI.create(BACKEND_URL + "/api/saveUser"))
-                                .header("Content-Type", "application/json")
-                                .POST(HttpRequest.BodyPublishers.ofString(saveUserJson.toString()))
-                                .build();
-                        client.send(saveUserRequest, HttpResponse.BodyHandlers.ofString());
+                        System.out.println("Attempting to save user to DB: " + email);
+                        boolean success = db.saveUser(email, name, picture);
+                        if (success) {
+                            System.out.println("Successfully saved/merged user in DB: " + email);
+                        } else {
+                            System.err.println("Failed to save/merge user in DB: " + email);
+                        }
                     } catch (Exception e) {
-                        System.err.println("Error saving user to backend: " + e.getMessage());
+                        System.err.println("Exception while saving user to backend: " + e.getMessage());
                         e.printStackTrace();
                     }
                 });
 
                 exchange.getResponseHeaders().add("Set-Cookie",
                         "sessionId=" + sessionToken + "; Path=/; HttpOnly; SameSite=Lax");
-                // *** Use FRONTEND_URL for the final redirect ***
                 exchange.getResponseHeaders().add("Location", FRONTEND_URL + "/home");
                 exchange.sendResponseHeaders(302, -1);
                 exchange.close();
+
             } catch (Exception e) {
                 System.err.println("Error in Google OAuth callback: " + e.getMessage());
                 e.printStackTrace();
@@ -283,7 +219,7 @@ public class Server {
             }
         });
 
-        server.createContext("/logout", exchange -> {
+       server.createContext("/logout", exchange -> {
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                 // *** Use FRONTEND_URL for CORS headers ***
                 addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS",
@@ -386,29 +322,8 @@ public class Server {
                 exchange.close();
             }
         });
-
-        // 2. MOVE AND ADD THE DATABASE INITIALIZATION LOGIC HERE
-        // --- Database Initialization ---
-        System.out.println("Connecting to the database and initializing schema...");
-        databaseInteractions db = new databaseInteractions();
-
-        // Test the connection first. If it fails, exit the application.
-        if (!db.testConnection()) {
-            System.err.println("CRITICAL: Database connection failed. The server will not start.");
-            System.exit(1); // Exit with a non-zero status code to indicate an error
-        }
-
-        System.out.println("Database connection successful.");
-
-        // Now, run the schema initialization.
-        // Because this method checks if tables exist, it is safe to run every time.
-        db.initializeSchema();
-        System.out.println("Schema initialization complete.");
-        // --- End of Database Initialization ---
-
-        // 3. START THE SERVER ONLY AFTER THE DATABASE IS READY
         server.start();
-        System.out.println("Server started on port " + port + ". Backend is configured at: " + BACKEND_URL);
+        System.out.println("Server started on port " + port);
     }
 
     private static void addCorsHeaders(Headers headers, String origin, String methods, String allowedHeaders) {
