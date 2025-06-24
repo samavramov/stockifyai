@@ -3,7 +3,8 @@
 # Stage 1: Build the Java application
 # Using official OpenJDK 11 JDK for building (slim version for smaller size)
 FROM openjdk:11-jdk-slim AS build
-# Maven is usually pre-installed on OpenJDK JDK images.
+# Install Maven as it's not included in the slim JRE/JDK images by default
+RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
