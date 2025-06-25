@@ -26,10 +26,10 @@
           <div class="bg-white rounded-xl shadow-lg p-6">
             <div class="flex justify-between items-center mb-6">
               <h3 class="text-xl font-semibold text-gray-900 hidden md:block ">
-                {{ activeChart === 'current' ? 'Current Sentiment' : '10-Day Average' }} Trend
+                {{ activeChart === 'current' ? 'Today\'s Sentiment Snapshot ' : '10 Day Sentiment Trends'}} 
               </h3>
               <h3 class="text-xl font-semibold text-gray-900 md:hidden text-center justify-center flex w-full">
-                {{ activeChart === 'current' ? 'Current Sentiment' : '10-Day Average' }} Trend
+                {{ activeChart === 'current' ? 'Today\'s Sentiment Snapshot ' : '10 Day Sentiment Trends'}} 
               </h3>
               <div class="flex items-center space-x-3 hidden md:block ">
                 <span :class="activeChart === 'current' ? 'text-royalpurple-500 font-medium' : 'text-gray-500'"
@@ -54,16 +54,10 @@
               <div class="w-full h-full flex items-center justify-center">
                 <Gauge :displayValue="stockData.sentimentValue" :min="-1" :max="1" class="w-full h-full" />
               </div>
-              <div class="absolute top-3 right-3">
-                <span
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  Live Data
-                </span>
-              </div>
             </div>
             <div v-else class="w-full bg-gray-100 rounded-lg flex flex-col items-center justify-center p-4">
               <h4 class="text-center text-lg font-montserrat font-medium text-gray-800 mb-4">
-                Last 10 Daily Sentiments
+                Sentiment Scores for {{symbol}}
               </h4>
               <ApexChart type="line" :options="lineOptions" :series="[{ name: 'Sentiment', data: reversedLastTen }]"
                 height="240" class="w-full" />

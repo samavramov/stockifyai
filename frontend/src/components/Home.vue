@@ -275,7 +275,7 @@
             </div>
             <div class="lg:col-span-2">
               <div class="bg-white rounded-xl p-6 shadow">
-                <h2 class="text-xl font-bold mb-4">Followed Stocks - 10 Day Sentiment</h2>
+                <h2 class="text-xl font-bold mb-4">Followed Stocks - 10 Day Sentiment Trends</h2>
                 <apexchart type="line" height="400" :options="chartOptions" :series="chartSeries" />
               </div>
             </div>
