@@ -1,5 +1,5 @@
 package com.stockdashboard;
-
+import java.util.List;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -12,6 +12,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import io.github.cdimascio.dotenv.Dotenv;
 
@@ -155,26 +156,61 @@ public class databaseInteractions {
 
             ps.setString(5, urlsJson);
             ps.setString(6, s.llmAnalysis);
+            long startTime = System.nanoTime();
             ps.executeUpdate();
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime) / 1000000; // Convert to milliseconds
+            System.out.println("Time taken to add sentiment: " + duration + "ms");
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public ArrayList<sentiment> getLatestSentimentsByStockSymbol(String stockSymbol, Integer limit) throws SQLException {
+    /**
+     * --- NEW, OPTIMIZED METHOD ---
+     * Fetches the latest sentiment records for a list of stock symbols in a single, efficient query.
+     * This uses a window function for optimal performance on the database side.
+     *
+     * @param stockSymbols A list of stock symbols to fetch data for.
+     * @param limit The number of recent records to fetch for each symbol.
+     * @return A list of sentiment objects.
+     * @throws SQLException
+     */
+    public ArrayList<sentiment> getLatestSentimentsForSymbols(List<String> stockSymbols, Integer limit) throws SQLException {
         ArrayList<sentiment> results = new ArrayList<>();
-        if (limit > 20)
+        if (stockSymbols == null || stockSymbols.isEmpty()) {
+            return results; // Nothing to do, return empty list
+        }
+        if (limit > 20) {
             limit = 20;
+        }
 
-        String sql = "SELECT StockSymbol, CompanyName, Sentiment, SentimentTimestamp, URLS, LLMAnalysis " +
-                "FROM Stocks " +
-                "WHERE StockSymbol = ? " +
-                "ORDER BY SentimentTimestamp DESC " +
-                "FETCH FIRST ? ROWS ONLY";
+        // This SQL query uses a Window Function to get the 'top N' rows for each symbol group.
+        // It is the most efficient way to solve this problem in a single query.
+        // NOTE: Oracle 12c or later is required for the "FETCH FIRST" clause.
+        String sql = "WITH RankedSentiments AS (" +
+                     "  SELECT s.*, ROW_NUMBER() OVER(PARTITION BY StockSymbol ORDER BY SentimentTimestamp DESC) as rn " +
+                     "  FROM Stocks s " +
+                     "  WHERE StockSymbol IN (%s)" + // Dynamic placeholder for symbols
+                     ") " +
+                     "SELECT StockSymbol, CompanyName, Sentiment, SentimentTimestamp, URLS, LLMAnalysis " +
+                     "FROM RankedSentiments " +
+                     "WHERE rn <= ?";
 
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, stockSymbol);
-            ps.setInt(2, limit);
+        // Create the correct number of '?' placeholders for the IN clause
+        String inClause = String.join(",", Collections.nCopies(stockSymbols.size(), "?"));
+        String formattedSql = String.format(sql, inClause);
+
+        long startTime = System.nanoTime();
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(formattedSql)) {
+            // Set the stock symbols for the IN clause
+            int i = 1;
+            for (String symbol : stockSymbols) {
+                ps.setString(i++, symbol);
+            }
+            // Set the final parameter for the row number limit
+            ps.setInt(i, limit);
+
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String symbol = rs.getString("StockSymbol");
@@ -184,32 +220,42 @@ public class databaseInteractions {
                     Date sentimentDate = new Date(ts.getTime());
                     String urlsJson = rs.getString("URLS");
 
-                    // --- FIX: Use a proper JSON parser for robustness ---
-                    String[] urlArray = new String[]{"", "", ""};
-                    if (urlsJson != null && !urlsJson.isEmpty()) {
+                    String[] urlArray = {"", "", ""};
+                    if (urlsJson != null && !urlsJson.trim().isEmpty()) {
                         try {
                             JsonArray jsonArray = JsonParser.parseString(urlsJson).getAsJsonArray();
-                            for (int i = 0; i < jsonArray.size() && i < 3; i++) {
-                                JsonElement element = jsonArray.get(i);
-                                urlArray[i] = element.isJsonNull() ? "" : element.getAsString();
+                            for (int j = 0; j < jsonArray.size() && j < 3; j++) {
+                                JsonElement element = jsonArray.get(j);
+                                urlArray[j] = element.isJsonNull() ? "" : element.getAsString();
                             }
                         } catch (Exception e) {
-                            System.err.println("Error parsing URLS JSON: " + urlsJson);
-                            // Keep default empty strings in urlArray
+                            System.err.println("Error parsing URLS JSON for symbol " + symbol + ": " + urlsJson + "; " + e.getMessage());
                         }
                     }
 
-                    String u1 = urlArray[0];
-                    String u2 = urlArray[1];
-                    String u3 = urlArray[2];
-                    String analysis = rs.getString("LLMAnalysis");
-                    sentiment s = new sentiment(symbol, company, sentimentValue, sentimentDate, u1, u2, u3, analysis);
+                    sentiment s = new sentiment(symbol, company, sentimentValue, sentimentDate, urlArray[0], urlArray[1], urlArray[2], rs.getString("LLMAnalysis"));
                     results.add(s);
                 }
             }
         }
-        // Let SQLException bubble up to the handler
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime) / 1000000;
+        System.out.println("Time taken to get latest sentiments for " + stockSymbols.size() + " symbols: " + duration + "ms");
         return results;
+    }
+
+
+    /**
+     * --- REFACTORED OLD METHOD ---
+     * This method is now a simple and efficient wrapper around the new bulk method.
+     * This maintains the existing method signature while benefiting from the optimized query path.
+     */
+    public ArrayList<sentiment> getLatestSentimentsByStockSymbol(String stockSymbol, Integer limit) throws SQLException {
+        if (stockSymbol == null || stockSymbol.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        // Call the new, powerful method with a list containing just one symbol.
+        return getLatestSentimentsForSymbols(Collections.singletonList(stockSymbol), limit);
     }
 
     public boolean saveUser(String email, String name, String picture) {
@@ -220,21 +266,27 @@ public class databaseInteractions {
                 "  INSERT (email, name, picture) VALUES (s.email, s.name, s.picture) " +
                 "WHEN MATCHED THEN " +
                 "  UPDATE SET u.name = s.name, u.picture = s.picture";
+        long startTime = System.nanoTime();
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
             stmt.setString(2, name);
             stmt.setString(3, picture);
             int rowsAffected = stmt.executeUpdate();
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime) / 1000000; // Convert to milliseconds
+            System.out.println("Time taken to save user: " + duration + "ms");
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("SQLException in saveUser:");
             e.printStackTrace();
             return false;
         }
+
     }
 
     public User getUserByEmail(String email) throws SQLException {
         String sql = "SELECT email, name, picture FROM users WHERE email = ?";
+        long startTime = System.nanoTime();
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -243,6 +295,9 @@ public class databaseInteractions {
                 }
             }
         }
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime) / 1000000; // Convert to milliseconds
+        System.out.println("Time taken to get user by email: " + duration + "ms");
         return null;
     }
 
@@ -251,7 +306,11 @@ public class databaseInteractions {
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
             stmt.setString(2, stockSymbol);
+            long startTime = System.nanoTime();
             int rows = stmt.executeUpdate();
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime) / 1000000; // Convert to milliseconds
+            System.out.println("Time taken to follow stock: " + duration + "ms");
             return rows > 0;
         } catch (SQLException e) {
             if (e.getErrorCode() == 1) { // ORA-00001: unique constraint violated
@@ -268,7 +327,12 @@ public class databaseInteractions {
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
             stmt.setString(2, stockSymbol);
+            long startTime = System.nanoTime();
+
             int rows = stmt.executeUpdate();
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime) / 1000000; // Convert to milliseconds
+            System.out.println("Time taken to unfollow stock: " + duration + "ms");
             return rows > 0;
         }
     }
@@ -279,11 +343,16 @@ public class databaseInteractions {
         String sql = "SELECT stock_symbol FROM user_stocks WHERE user_email = ?";
         try (Connection conn = getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
+            long startTime = System.nanoTime();
+
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     followed.add(rs.getString("stock_symbol"));
                 }
             }
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime) / 1000000; // Convert to milliseconds
+            System.out.println("Time taken to get followed stocks: " + duration + "ms");    
         }
         // Let any SQLException bubble up to the apiHandler
         return followed;

@@ -11,6 +11,10 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class apiHandler implements HttpHandler {
 
@@ -18,11 +22,12 @@ public class apiHandler implements HttpHandler {
     private final databaseInteractions db;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private static final String[] SYMBOLS = {
+    // This list is used for the "All Stocks" view on the homepage
+    private static final List<String> SYMBOLS = Arrays.asList(
             "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "NFLX", "CRM", "ORCL",
             "ADBE", "INTC", "AMD", "PYPL", "UBER", "SPOT", "ZOOM", "TWTR", "SNAP", "SQ",
             "SHOP", "ROKU", "PINS", "DOCU", "PLTR", "COIN", "HOOD", "RBLX", "U", "DDOG"
-    };
+    );
 
     public apiHandler(String frontendUrl, databaseInteractions db) {
         this.frontendUrl = frontendUrl;
@@ -53,6 +58,9 @@ public class apiHandler implements HttpHandler {
                     case "/api/unfollowStock":
                         handleUnfollowStock(exchange);
                         break;
+                    case "/api/sentiments/bulk": // <-- NEWLY ADDED ENDPOINT
+                        handleGetBulkSentiments(exchange);
+                        break;
                     default:
                         sendJsonError(exchange, 404, "Not Found");
                         break;
@@ -82,75 +90,82 @@ public class apiHandler implements HttpHandler {
         }
     }
 
+    /**
+     * Handles the new POST /api/sentiments/bulk endpoint.
+     * Expects a JSON body like: {"symbols": ["AAPL", "TSLA"], "limit": 10}
+     */
+    private void handleGetBulkSentiments(HttpExchange exchange) throws IOException {
+        try {
+            String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            JsonNode root = mapper.readTree(requestBody);
+
+            List<String> symbols = new ArrayList<>();
+            if (root.has("symbols") && root.get("symbols").isArray()) {
+                for (final JsonNode symbolNode : root.get("symbols")) {
+                    symbols.add(symbolNode.asText());
+                }
+            }
+
+            if (symbols.isEmpty()) {
+                sendJsonError(exchange, 400, "Request body must contain a 'symbols' array.");
+                return;
+            }
+            
+            int limit = root.has("limit") ? root.get("limit").asInt() : 10;
+
+            // Make one efficient call to the database
+            ArrayList<sentiment> rawSentiments = db.getLatestSentimentsForSymbols(symbols, limit);
+
+            // Process the data (calculate averages, etc.) by grouping results
+            ArrayList<sentiment> processedSentiments = processRawSentiments(rawSentiments);
+
+            String json = mapper.writeValueAsString(processedSentiments);
+            sendJsonResponse(exchange, 200, json);
+
+        } catch (SQLException e) {
+            System.err.println("Database error in handleGetBulkSentiments:");
+            e.printStackTrace();
+            sendJsonError(exchange, 500, "Database error while fetching bulk sentiments.");
+        } catch (Exception e) {
+            System.err.println("Error processing bulk sentiments request:");
+            e.printStackTrace();
+            sendJsonError(exchange, 500, "Server error during bulk sentiment processing.");
+        }
+    }
+
+
+    /**
+     * Handles GET /api/sentiments. This is now optimized for the "all stocks" case.
+     */
     private void handleGetSentiments(HttpExchange exchange) throws IOException {
-        // FIX: Check for query parameters to handle single vs. all stock requests
         String symbolParam = getQueryParam(exchange.getRequestURI().getQuery(), "symbol");
         String limitParam = getQueryParam(exchange.getRequestURI().getQuery(), "limit");
         int limit = (limitParam != null) ? Integer.parseInt(limitParam) : 10;
 
         try {
-            ArrayList<sentiment> sentiments = new ArrayList<>();
-
             if (symbolParam != null && !symbolParam.isEmpty()) {
-                // --- Case 1: A specific symbol is requested (for Following.vue) ---
-                sentiments = db.getLatestSentimentsByStockSymbol(symbolParam, limit);
-                // The sentiment object from the DB doesn't have these calculated, so we do it here.
+                // --- Case 1: Request for a single stock's history (for detail page chart) ---
+                ArrayList<sentiment> sentiments = db.getLatestSentimentsByStockSymbol(symbolParam, limit);
+                
+                // The frontend needs the calculated values on the most recent entry
                 if (!sentiments.isEmpty()) {
-                    ArrayList<Double> lastTenValues = new ArrayList<>();
-                    double sum = 0.0;
-                    for(sentiment s : sentiments) {
-                        lastTenValues.add(s.sentimentValue);
-                        sum += s.sentimentValue;
-                    }
-
-                    double percentChange = 0.0;
-                    if(sentiments.size() > 1) {
-                         double recent = sentiments.get(0).sentimentValue;
-                         double previous = sentiments.get(1).sentimentValue;
-                         if (previous != 0) {
-                            percentChange = ((recent - previous) / Math.abs(previous)) * 100.0;
-                         }
-                    }
-                    
-                    sentiment mostRecent = sentiments.get(0);
-                    mostRecent.tenDayAverage = sum / sentiments.size();
-                    mostRecent.percentChange = percentChange;
-                    mostRecent.lastTen = lastTenValues;
+                    processSingleStockHistory(sentiments);
                 }
+                
+                String json = mapper.writeValueAsString(sentiments);
+                sendJsonResponse(exchange, 200, json);
+
             } else {
-                // --- Case 2: No symbol is requested, get all (for Home.vue) ---
-                for (String symbol : SYMBOLS) {
-                    ArrayList<sentiment> lastTen = db.getLatestSentimentsByStockSymbol(symbol, 10);
-                    if (lastTen != null && !lastTen.isEmpty()) {
-                        ArrayList<Double> lastTenValues = new ArrayList<>();
-                        double sum = 0.0;
-                        for (sentiment s : lastTen) {
-                            lastTenValues.add(s.sentimentValue);
-                            sum += s.sentimentValue;
-                        }
-
-                        double percentChange = 0.0;
-                        if (lastTen.size() > 1) {
-                            double recent = lastTen.get(0).sentimentValue;
-                            double previous = lastTen.get(1).sentimentValue;
-                            if (previous != 0) {
-                                percentChange = ((recent - previous) / Math.abs(previous)) * 100.0;
-                            }
-                        }
-
-                        double averageSentiment = sum / lastTen.size();
-                        sentiment mostRecent = lastTen.get(0);
-                        mostRecent.tenDayAverage = averageSentiment;
-                        mostRecent.percentChange = percentChange;
-                        mostRecent.lastTen = lastTenValues;
-                        sentiments.add(mostRecent);
-                    }
-                }
+                // --- Case 2: Request for all stocks (for main dashboard) ---
+                // This now uses ONE database call instead of a loop of 30 calls.
+                ArrayList<sentiment> rawSentiments = db.getLatestSentimentsForSymbols(SYMBOLS, 10);
+                
+                // Process the raw data (group by symbol, calculate averages, etc.)
+                ArrayList<sentiment> processedSentiments = processRawSentiments(rawSentiments);
+                
+                String json = mapper.writeValueAsString(processedSentiments);
+                sendJsonResponse(exchange, 200, json);
             }
-
-            String json = mapper.writeValueAsString(sentiments);
-            sendJsonResponse(exchange, 200, json);
-
         } catch (SQLException e) {
             System.err.println("Database error in handleGetSentiments:");
             e.printStackTrace();
@@ -161,6 +176,61 @@ public class apiHandler implements HttpHandler {
             sendJsonError(exchange, 500, "Server error while formatting data.");
         }
     }
+
+    /**
+     * A helper method to process a flat list of sentiment data, group it by symbol,
+     * and calculate aggregate values for the most recent entry of each symbol.
+     * @param rawSentiments A flat list of sentiment objects from the database.
+     * @return A list containing only the most recent sentiment object for each stock, augmented with calculated data.
+     */
+    private ArrayList<sentiment> processRawSentiments(List<sentiment> rawSentiments) {
+        // Group the flat list of sentiments by their stock symbol
+        Map<String, List<sentiment>> groupedBySymbol = rawSentiments.stream()
+            .collect(Collectors.groupingBy(s -> s.stockSymbol));
+
+        ArrayList<sentiment> processedSentiments = new ArrayList<>();
+        for (Map.Entry<String, List<sentiment>> entry : groupedBySymbol.entrySet()) {
+            List<sentiment> stockSentiments = entry.getValue(); // These are already sorted DESC by date from the DB
+            
+            // Augment the most recent entry with calculated data
+            processSingleStockHistory(stockSentiments);
+            
+            // Add only the most recent (and now augmented) sentiment to the final list
+            processedSentiments.add(stockSentiments.get(0));
+        }
+        return processedSentiments;
+    }
+
+    /**
+     * A helper to calculate and set aggregate data on the most recent sentiment object in a list.
+     * @param stockHistory A list of sentiment objects for a single stock, sorted newest to oldest.
+     */
+    private void processSingleStockHistory(List<sentiment> stockHistory) {
+        if (stockHistory == null || stockHistory.isEmpty()) {
+            return;
+        }
+
+        ArrayList<Double> lastTenValues = new ArrayList<>();
+        double sum = 0.0;
+        for (sentiment s : stockHistory) {
+            lastTenValues.add(s.sentimentValue);
+            sum += s.sentimentValue;
+        }
+
+        double percentChange = 0.0;
+        if (stockHistory.size() > 1) {
+            double recent = stockHistory.get(0).sentimentValue;
+            double previous = stockHistory.get(1).sentimentValue;
+            percentChange = ((recent+1) - (previous+1) / 2);
+        }
+
+        // Get the most recent record to set the calculated values on
+        sentiment mostRecent = stockHistory.get(0);
+        mostRecent.tenDayAverage = sum / stockHistory.size();
+        mostRecent.percentChange = percentChange;
+        mostRecent.lastTen = lastTenValues;
+    }
+
 
     public void handleGetUser(HttpExchange exchange) throws IOException {
         String email = getQueryParam(exchange.getRequestURI().getQuery(), "email");

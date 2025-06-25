@@ -1,19 +1,14 @@
 <template>
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <span class="font-merriweather font-bold text-3xl text-purple-500">stockify.ai</span>
-                </div>
-                <div>
-                    <button @click="goBack"
-                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                        ← Back
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <nav class="w-full bg-white shadow flex items-center justify-between px-6">
+    <img src="../images/logo.png" alt="Stockify AI Logo"
+      class="h-20 sm:h-20 md:h-20 object-contain" />
+    <div class="text-right">
+      <button @click="goBack"
+        class="mr-4 p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200">
+        ← Back
+      </button>
+    </div>
+  </nav>
     <div class="max-w-3xl mx-auto py-12 px-4 text-gray-800">
         <h1 class="text-3xl font-bold mb-6">Cookie Policy</h1>
         <p class="mb-4">

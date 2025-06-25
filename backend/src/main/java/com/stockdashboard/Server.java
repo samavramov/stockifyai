@@ -15,11 +15,15 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.sql.SQLException; // Only needed here now
+import java.util.ArrayList; // Added for sample data list
+import java.util.Date; // Added for timestamp
+import java.util.LinkedHashMap;
+import java.util.List; // Added for sample data list
 
 public class Server {
     private static final Map<String, JsonObject> activeSessions = new ConcurrentHashMap<>();
@@ -70,6 +74,117 @@ public class Server {
         System.out.println("Frontend URL loaded successfully: " + FRONTEND_URL);
     }
 
+    // In Server.java
+
+    public static void populateDataRand(databaseInteractions db, boolean pop) {
+        if (pop) {
+            System.out.println("Populating database with initial randomized stock data...");
+            try {
+                // --- The Robust Fix: Use a data structure that pairs the ticker and name ---
+                // This Map ensures the ticker and name can never be out of sync.
+                Map<String, String> companyData = new LinkedHashMap<>(); // Use LinkedHashMap to maintain insertion
+                                                                         // order
+                companyData.put("AAPL", "Apple Inc.");
+                companyData.put("MSFT", "Microsoft Corporation");
+                companyData.put("GOOGL", "Alphabet Inc.");
+                companyData.put("AMZN", "Amazon.com Inc.");
+                companyData.put("TSLA", "Tesla Inc.");
+                companyData.put("META", "Meta Platforms Inc.");
+                companyData.put("NVDA", "NVIDIA Corporation");
+                companyData.put("NFLX", "Netflix Inc.");
+                companyData.put("CRM", "Salesforce, Inc.");
+                companyData.put("ORCL", "Oracle Corporation");
+                companyData.put("ADBE", "Adobe Inc.");
+                companyData.put("INTC", "Intel Corporation");
+                companyData.put("AMD", "Advanced Micro Devices");
+                companyData.put("PYPL", "PayPal Holdings Inc.");
+                companyData.put("UBER", "Uber Technologies Inc.");
+                companyData.put("SPOT", "Spotify Technology SA");
+                companyData.put("ZOOM", "Zoom Video Communications");
+                companyData.put("TWTR", "X Corp. (Twitter)");
+                companyData.put("SNAP", "Snap Inc.");
+                companyData.put("SQ", "Block, Inc.");
+                companyData.put("SHOP", "Shopify Inc.");
+                companyData.put("ROKU", "Roku, Inc.");
+                companyData.put("PINS", "Pinterest, Inc.");
+                companyData.put("DOCU", "DocuSign, Inc.");
+                companyData.put("PLTR", "Palantir Technologies");
+                companyData.put("COIN", "Coinbase Global Inc.");
+                companyData.put("HOOD", "Robinhood Markets, Inc.");
+                companyData.put("RBLX", "Roblox Corporation");
+                companyData.put("U", "Unity Software Inc.");
+                companyData.put("DDOG", "Datadog, Inc.");
+
+                // Convert the Map keys to an array for easy random selection
+                String[] tickers = companyData.keySet().toArray(new String[0]);
+
+                String[] positiveSummaries = {
+                        "Strong quarterly earnings report exceeded expectations, driving positive sentiment.",
+                        "New product launch met with widespread consumer praise and critical acclaim.",
+                        "Strategic partnership announced, expected to open up new revenue streams.",
+                        "LLM analysis indicates a bullish outlook due to strong market positioning and innovation.",
+                        "Upgraded by top analysts following a period of sustained growth."
+                };
+                String[] negativeSummaries = {
+                        "Missed earnings targets, leading to a drop in investor confidence.",
+                        "Facing increased regulatory scrutiny which is causing market uncertainty.",
+                        "Supply chain disruptions are expected to impact production and sales.",
+                        "LLM analysis reveals bearish sentiment amid growing competition and market headwinds.",
+                        "A recent product recall has negatively impacted the company's public image."
+                };
+
+                Random random = new Random();
+                List<sentiment> sampleStocks = new ArrayList<>();
+                for (int c = 0; c < 11; c++) {
+                    // Generate sentiment entries for all 30 stocks
+                    for (int i = 0; i < tickers.length; i++) {
+                        // No need for a random index anymore if we want to add all of them
+                        String ticker = tickers[i];
+                        String name = companyData.get(ticker); // Get the name from the Map using the ticker
+
+                        // Generate a random sentiment score between -1.0 and 1.0
+                        double sentimentScore = -1.0 + (2.0 * random.nextDouble());
+                        String summary;
+
+                        // Choose a summary based on the sentiment score
+                        if (sentimentScore > 0.1) {
+                            summary = positiveSummaries[random.nextInt(positiveSummaries.length)];
+                        } else if (sentimentScore < -0.1) {
+                            summary = negativeSummaries[random.nextInt(negativeSummaries.length)];
+                        } else {
+                            summary = "Market sentiment is neutral, with no significant catalysts observed.";
+                        }
+
+                        sampleStocks.add(new sentiment(
+                                ticker,
+                                name,
+                                sentimentScore,
+                                new Date(), // A new date for each entry
+                                "https://www.example.com/" + ticker.toLowerCase() + "-news1",
+                                "https://www.example.com/" + ticker.toLowerCase() + "-news2",
+                                "https://www.example.com/" + ticker.toLowerCase() + "-news3",
+                                summary));
+                        Thread.sleep(10); // Sleep to ensure unique timestamps and avoid the ORA-00001 error
+                    }
+
+                    // Loop through the list and add each generated stock to the database
+                    for (sentiment stock : sampleStocks) {
+                        System.out.println("Adding sentiment for: " + stock.stockSymbol);
+                        db.addSentiment(stock);
+                    }
+                }
+
+                System.out.println("Database population complete.");
+
+            } catch (Exception e) {
+                System.err.println("An error occurred during database population: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Skipping database population.");
+        }
+    }
+
     public static void main(String[] args) throws IOException {
         // --- 1. SETUP DATABASE CONNECTION FIRST ---
         // Create a single, shared database interactions object.
@@ -87,6 +202,21 @@ public class Server {
         db.initializeSchema();
         System.out.println("Schema initialization complete.");
 
+        // --- START: MODIFIED SECTION ---
+
+        // --- 3. POPULATE DATABASE WITH SAMPLE DATA ---
+        System.out.println("Populating database with initial stock data...");
+        try {
+            populateDataRand(db, false);
+            System.out.println("Database population complete.");
+
+        } catch (Exception e) {
+            System.err.println("An error occurred during database population: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // --- END: MODIFIED SECTION ---
+
         // --- 2. CONFIGURE AND START THE HTTP SERVER ---
         int port = 8001;
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -94,10 +224,12 @@ public class Server {
         server.setExecutor(threadPool);
 
         // --- FIX: Pass the shared 'db' object to the apiHandler's constructor ---
-        // This makes the handler more efficient by sharing the single DB connection pool.
+        // This makes the handler more efficient by sharing the single DB connection
+        // pool.
         final apiHandler apiHandler = new apiHandler(FRONTEND_URL, db);
-        
+
         server.createContext("/api/sentiments", apiHandler);
+        server.createContext("/api/sentiments/bulk", apiHandler);
         server.createContext("/api/saveUser", apiHandler);
         server.createContext("/api/getUser", apiHandler);
         server.createContext("/api/followStock", apiHandler);
@@ -217,7 +349,7 @@ public class Server {
             }
         });
 
-       server.createContext("/logout", exchange -> {
+        server.createContext("/logout", exchange -> {
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                 addCorsHeaders(exchange.getResponseHeaders(), FRONTEND_URL, "GET, POST, OPTIONS",
                         "Content-Type, Authorization");
@@ -311,7 +443,7 @@ public class Server {
                 exchange.close();
             }
         });
-        
+
         server.start();
         System.out.println("Server started on port " + port);
     }

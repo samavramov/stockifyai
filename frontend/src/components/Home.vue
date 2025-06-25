@@ -1,8 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <nav class="w-full bg-white shadow flex items-center justify-between px-6">
-      <img src="../images/logo.png" alt="Stockify AI Logo"
-        class="h-20 sm:h-20 md:h-20 object-contain" />
+      <img src="../images/logo.png" alt="Stockify AI Logo" class="h-20 sm:h-20 md:h-20 object-contain" />
       <div class="relative">
         <button @click="toggleDropdown" class="flex items-center space-x-2 focus:outline-none">
           <div
@@ -187,49 +186,80 @@
           </div>
         </div>
         <div v-if="activeTab === 'followed'" class="space-y-6">
-           <div class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-2">Your Followed Stocks</h2>
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ userName }}'s Stocks</h2>
             <p class="text-gray-600">
-              A detailed view of your portfolio. For more charts, visit the
+              In-depth analysis available on the
               <router-link to="/following"
                 class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-blue-500 font-semibold hover:underline">
-                dedicated following page
-              </router-link>.
+                following page
+              </router-link>
             </p>
           </div>
-            <div v-if="isLoading" class="text-center py-8">
-                <p class="text-gray-600">Loading your stocks...</p>
-            </div>
-            <div v-else-if="followedStocksWithDetails.length === 0" class="text-center py-8 text-gray-500">
-                <p>You are not following any stocks yet. Click the 'All Stocks' tab to find stocks to follow.</p>
-            </div>
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div v-for="stock in followedStocksWithDetails" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
-                    class="bg-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="text-xl font-bold text-gray-900">{{ stock.symbol }}</div>
-                            <div class="text-sm text-gray-600 mb-2">{{ stock.name }}</div>
-                        </div>
-                        <button @click.stop="removeStock(stock.symbol)" class="text-gray-400 hover:text-red-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="mt-4">
-                        <div class="text-sm">Daily Sentiment: 
-                            <span :class="sentimentClass(stock.dailySentiment)" class="font-semibold">{{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}</span>
-                        </div>
-                        <div class="text-sm">10-Day Avg: 
-                             <span :class="sentimentClass(stock.tenDayAverage)" class="font-semibold">{{ stock.tenDayAverage != null ? stock.tenDayAverage.toFixed(2) : '—' }}</span>
-                        </div>
-                        <div class="text-sm">% Change: 
-                            <span :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">{{ stock.percentChange != null ? stock.percentChange.toFixed(2) + '%' : '—' }}</span>
-                        </div>
-                    </div>
+        </div>
+        <div v-if="activeTab === 'followed'">
+          <div class="mb-6 relative item-center">
+            <div class="grid grid-cols-1 md:grid-cols-9 gap-4 items-center">
+              <div class="lg:col-span-8">
+                <input v-model="searchQuery" type="text" placeholder="Search stocks to follow..."
+                  class="w-full border border-gray-300 rounded-lg px-4 py-2" @keyup.enter="addStockFromInput"
+                  @input="onInputChange" />
+                <ul v-if="searchQuery && filteredStocks.length && showSuggestions"
+                  class="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-60 overflow-y-auto shadow-md">
+                  <li v-for="stock in filteredStocks" :key="stock.symbol" @click="selectStock(stock.symbol)"
+                    class="px-4 py-2 cursor-pointer hover:bg-gray-100">
+                    {{ stock.symbol }} - {{ stock.name }}
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <div class=" text-right">
+                  <button :disabled="!searchQuery.trim()" @click="addStockFromInput"
+                    class="bg-royalpurple-500 text-white px-4 py-2 rounded-xl disabled:opacity-50">
+                    + Add Stock
+                  </button>
                 </div>
+              </div>
+              <p v-if="isAddingStock" class="text-sm text-gray-500 mt-2">Adding stock...</p>
+              <p v-if="addStockError" class="text-sm text-red-600 mt-2">{{ addStockError }}</p>
             </div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:items-start">
+            <div class="lg:col-span-1">
+              <div v-if="isLoading" class="text-center py-8">
+                <p class="text-gray-600">Loading followed stocks...</p>
+              </div>
+              <div v-else-if="loadingError" class="text-center py-8">
+                <p class="text-red-600">{{ loadingError }}</p>
+              </div>
+              <div v-else-if="followedStocks.length === 0" class="text-center py-8 text-gray-500">
+                <p>You are not following any stocks yet.</p>
+              </div>
+              <div v-else class="space-y-4">
+                <div v-for="stock in followedStocksWithDetails" :key="stock.symbol"
+                  @click="goToStockDetail(stock.symbol)"
+                  class="bg-white shadow rounded-xl p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+                  <div>
+                    <h2 class="text-lg font-semibold">{{ stock.symbol }} - {{ stock.name }}</h2>
+                    <p class="text-sm text-gray-600">Sentiment: {{ stock.sentimentValue ?? 'N/A' }}</p>
+                  </div>
+                  <button @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                      stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="lg:col-span-2">
+              <div class="bg-white rounded-xl p-6 shadow">
+                <h2 class="text-xl font-bold mb-4">Followed Stocks - 10 Day Sentiment</h2>
+                <apexchart type="line" height="400" :options="chartOptions" :series="chartSeries" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -277,7 +307,7 @@ export default {
   data() {
     return {
       // General State
-      sortColumn: 'symbol',
+      sortColumn: null,
       sortDirection: 'asc',
       activeTab: 'all',
       showDropdown: false,
@@ -286,7 +316,6 @@ export default {
       userEmail: '',
       userPicture: '',
       base_url: import.meta.env.VITE_API_BASE_URL,
-      // This holds the detailed data for ALL available stocks
       stocks: [
         { symbol: 'AAPL', name: 'Apple Inc.', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
         { symbol: 'AMD', name: 'Advanced Micro Devices', dailySentiment: null, tenDayAverage: null, percentChange: null, lastTen: [] },
@@ -324,8 +353,7 @@ export default {
       addStockError: null,
       isLoading: true,
       loadingError: null,
-      // This now only holds an array of strings (stock symbols)
-      followedStockSymbols: [],
+      followedStocks: [],
     };
   },
   computed: {
@@ -349,15 +377,8 @@ export default {
     },
     trendingStocks() {
       return [...this.stocks]
-        .filter(stock => stock.percentChange != null)
         .sort((a, b) => Math.abs(b.percentChange ?? 0) - Math.abs(a.percentChange ?? 0))
         .slice(0, 5);
-    },
-    // A new computed property to get the full objects for followed stocks
-    followedStocksWithDetails() {
-      return this.followedStockSymbols
-        .map(symbol => this.stocks.find(s => s.symbol === symbol))
-        .filter(stock => stock); // Filter out any undefined stocks just in case
     },
     lastTenDates() {
       const dates = [];
@@ -370,13 +391,12 @@ export default {
       return dates;
     },
     chartSeries() {
-      // This now uses the new computed property for followed stocks
-      return this.followedStocksWithDetails
-        .filter(stock => stock.lastTen && stock.lastTen.length > 0)
+      return this.followedStocks
+        .filter(stock => stock.lastTen && stock.lastTen.length)
         .map(stock => ({
           name: stock.symbol,
           data: stock.lastTen.slice().reverse().map((value, idx) => ({
-            x: this.lastTenDates[idx] || new Date().toISOString().slice(0,10),
+            x: this.lastTenDates[idx],
             y: value
           }))
         }));
@@ -385,7 +405,6 @@ export default {
       return {
         chart: { id: 'sentiment-line-chart', toolbar: { show: false } },
         xaxis: {
-          type: 'datetime',
           title: { text: 'Date' },
           labels: {
             rotate: -45,
@@ -394,158 +413,39 @@ export default {
         },
         yaxis: { min: -1, max: 1, title: { text: 'Sentiment' } },
         stroke: { curve: 'smooth' },
-        tooltip: { enabled: true, x: { format: 'dd MMM yy' } },
+        tooltip: { enabled: true },
         legend: { position: 'bottom' }
       };
     },
     filteredStocks() {
       const query = this.searchQuery.trim().toUpperCase();
       if (!query) return [];
-      // Search from the master list of all available stocks
       return this.stocks.filter(stock =>
         stock.symbol.includes(query) || stock.name.toUpperCase().includes(query)
       );
+    },
+    followedStocksWithDetails() {
+      // Ensure followedStocks has the necessary properties for isStockFollowed
+      return this.followedStocks.map(stock => {
+        const details = this.stocks.find(s => s.symbol === stock.symbol) || {};
+        return { ...details, ...stock };
+      });
     }
   },
-  async mounted() {
-    // Streamlined initial data loading
-    this.isLoading = true;
-    await this.loadUserData(); // Gets user info and populates followedStockSymbols
-    await this.loadAllSentiments(); // Gets data for all 29 stocks
-    this.isLoading = false;
+  mounted() {
+    this.loadUserData();
+    this.loadAllSentiments();
   },
   methods: {
-    // The helper now checks the simple array of symbols, which is much faster.
+    // Helper to check if a stock is followed
     isStockFollowed(symbol) {
-      return this.followedStockSymbols.includes(symbol);
-    },
-    async loadUserData() {
-      try {
-        const sessionRes = await fetch(`${this.base_url}/me`, {
-          credentials: 'include'
-        });
-        if (!sessionRes.ok) throw new Error('Not authenticated');
-
-        const sessionData = await sessionRes.json();
-        if (!sessionData.user || !sessionData.user.email) {
-          throw new Error('No user object or email found in session data');
-        }
-
-        this.userEmail = sessionData.user.email;
-        this.userName = sessionData.user.name;
-        this.userPicture = sessionData.user.picture;
-        
-        // Fetch just the symbols of followed stocks. This is a very fast operation.
-        const symbolsResponse = await fetch(`${this.base_url}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
-        if (!symbolsResponse.ok) throw new Error(`HTTP ${symbolsResponse.status}`);
-        this.followedStockSymbols = await symbolsResponse.json();
-
-      } catch (err) {
-        console.error('Failed to load user data:', err);
-        this.$router.push('/login');
-      }
-    },
-    async addStockFromAll(symbol) {
-      const event = window.event;
-      if (event) event.stopPropagation();
-      
-      this.addStockError = null;
-      if (this.isStockFollowed(symbol)) return; // Already followed, do nothing.
-
-      try {
-        const response = await fetch(`${this.base_url}/api/followStock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
-        });
-        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-        
-        // Optimistic UI update for instant feedback.
-        this.followedStockSymbols.push(symbol);
-
-      } catch (error) {
-        this.addStockError = `Error following stock: ${error.message}`;
-      }
-    },
-    async removeStock(symbol) {
-      const event = window.event;
-      if (event) event.stopPropagation();
-      try {
-        const response = await fetch(`${this.base_url}/api/unfollowStock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
-        });
-        if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
-        
-        // Optimistic UI update for instant feedback.
-        const index = this.followedStockSymbols.indexOf(symbol);
-        if (index > -1) {
-          this.followedStockSymbols.splice(index, 1);
-        }
-      } catch (error) {
-        console.error("Failed to remove stock:", error);
-        alert(`Error: ${error.message}`);
-      }
-    },
-    async addStockFromInput() {
-      const symbol = this.searchQuery.trim().toUpperCase();
-      if (!symbol) return;
-      if (!this.stocks.some(s => s.symbol === symbol)) {
-        this.addStockError = `${symbol} is not a valid stock symbol.`;
-        return;
-      }
-      if (this.isStockFollowed(symbol)) {
-        this.addStockError = `${symbol} is already followed.`;
-        return;
-      }
-      await this.addStockFromAll(symbol); // Reuse the main logic
-      this.searchQuery = '';
-      this.showSuggestions = false;
-    },
-    async logout() {
-      this.closeAllDropdowns();
-      localStorage.clear();
-      sessionStorage.clear();
-      try {
-        await fetch(`${this.base_url}/logout`, {
-          method: 'GET',
-          credentials: 'include'
-        });
-      } catch (err) {
-        console.error('Network error during logout request:', err);
-      } finally {
-        // Corrected the invalid path which would have caused an error.
-        this.$router.push('/login');
-      }
-    },
-    async loadAllSentiments() {
-      try {
-        const response = await fetch(`${this.base_url}/api/sentiments`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const allSentiments = await response.json();
-        
-        // Update the master 'stocks' array with fresh data from the backend
-        allSentiments.forEach(item => {
-          const idx = this.stocks.findIndex(s => s.symbol === item.stockSymbol);
-          if (idx !== -1) {
-            this.stocks[idx].dailySentiment = item.sentimentValue;
-            this.stocks[idx].tenDayAverage = item.tenDayAverage;
-            this.stocks[idx].percentChange = item.percentChange;
-            this.stocks[idx].name = item.companyName || this.stocks[idx].name;
-            this.stocks[idx].lastTen = item.lastTen || [];
-          }
-        });
-      } catch (err) {
-        console.error('Failed to load all sentiments:', err);
-        this.loadingError = 'Could not load market data. Please refresh.';
-      }
+      return this.followedStocks.some(stock => stock.symbol === symbol);
     },
     toggleSortDropdown() {
       this.showSortDropdown = !this.showSortDropdown;
-      if (this.showSortDropdown) this.showDropdown = false;
+      if (this.showSortDropdown) {
+        this.showDropdown = false;
+      }
     },
     selectSort(column) {
       this.sortTable(column);
@@ -560,23 +460,82 @@ export default {
         this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
       } else {
         this.sortColumn = column;
-        this.sortDirection = 'asc'; // Default to ascending when changing column
+        this.sortDirection = 'asc';
+      }
+    },
+    async loadUserData() {
+      try {
+        const sessionRes = await fetch(`${this.base_url}/me`, {
+          credentials: 'include'
+        });
+        if (!sessionRes.ok) {
+          throw new Error('Not authenticated');
+        }
+
+        const sessionData = await sessionRes.json();
+        console.log('Session data from /me:', sessionData);
+
+        if (!sessionData.user || !sessionData.user.email) {
+          throw new Error('No user object or email found in session data');
+        }
+
+        this.userEmail = sessionData.user.email;
+        this.userName = sessionData.user.name;
+        this.userPicture = sessionData.user.picture;
+        await this.loadFollowedStocksData();
+      } catch (err) {
+        console.error('Failed to load user data:', err);
+        this.$router.push('/login');
+      }
+    },
+    async logout() {
+      this.closeAllDropdowns();
+      localStorage.clear();
+      sessionStorage.clear();
+
+      try {
+        const response = await fetch(`${this.base_url}/logout`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          console.error('Server-side logout failed:', response.statusText);
+        }
+      } catch (err) {
+        console.error('Network error during logout request:', err);
+      } finally {
+        this.$router.push('/login');
       }
     },
     toggleDropdown() {
       this.showDropdown = !this.showDropdown;
-      if (this.showDropdown) this.showSortDropdown = false;
+      if (this.showDropdown) {
+        this.showSortDropdown = false;
+      }
     },
-    goToFollowingPage() { 
-      this.$router.push(`/following`); 
-      this.closeAllDropdowns(); 
-    },
-    goToStockDetail(symbol) { 
-      this.$router.push(`/stock/${symbol}`); 
-    },
-    sentimentClass(value) { 
-      if (value == null) return 'text-gray-400';
-      return value >= 0 ? 'text-green-600' : 'text-red-600'; 
+    goToFollowingPage() { this.$router.push(`/following`); this.closeAllDropdowns(); },
+    goToStockDetail(symbol) { this.$router.push(`/stock/${symbol}`); },
+    sentimentClass(value) { return value >= 0 ? 'text-green-600' : 'text-red-600'; },
+    async loadAllSentiments() {
+      try {
+        const response = await fetch(`${this.base_url}/api/sentiments`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const allSentiments = await response.json();
+        allSentiments.forEach(item => {
+          const idx = this.stocks.findIndex(s => s.symbol === item.stockSymbol);
+          if (idx !== -1) {
+            this.stocks[idx].dailySentiment = item.sentimentValue;
+            this.stocks[idx].tenDayAverage = item.tenDayAverage;
+            this.stocks[idx].percentChange = item.percentChange;
+            this.stocks[idx].name = item.companyName || this.stocks[idx].name;
+            // Also store lastTen data in the main stocks array
+            this.stocks[idx].lastTen = item.lastTen || [];
+          }
+        });
+      } catch (err) {
+        console.error('Failed to load all sentiments:', err);
+      }
     },
     onInputChange() {
       this.addStockError = null;
@@ -585,6 +544,182 @@ export default {
     selectStock(symbol) {
       this.searchQuery = symbol;
       this.showSuggestions = false;
+    },
+    async loadFollowedStocksData() {
+      if (!this.userEmail) return;
+      this.isLoading = true;
+      this.loadingError = null;
+      try {
+        // Step 1: Get the list of followed stock symbols (this is fast)
+        const symbolsResponse = await fetch(`${this.base_url}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
+        if (!symbolsResponse.ok) throw new Error(`Could not fetch followed symbols: ${symbolsResponse.status}`);
+        const followedSymbols = await symbolsResponse.json();
+
+        if (followedSymbols.length === 0) {
+          this.followedStocks = [];
+          this.isLoading = false;
+          return;
+        }
+
+        // --- NEW LOGIC ---
+        // Step 2: Make ONE single API call to the new bulk endpoint to get all data at once.
+        const sentimentsResponse = await fetch(`${this.base_url}/api/sentiments/bulk`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            symbols: followedSymbols,
+            limit: 10 // Fetch last 10 data points for the chart
+          })
+        });
+
+        if (!sentimentsResponse.ok) throw new Error(`Could not fetch bulk sentiment data: ${sentimentsResponse.status}`);
+        const sentimentDetails = await sentimentsResponse.json();
+
+        // Now process the results. This part will be much faster.
+        // You may need to adjust this logic to match how you structure data.
+        this.followedStocks = followedSymbols.map(symbol => {
+          // Find all sentiments for this specific symbol from the bulk response
+          const symbolSentiments = sentimentDetails.filter(s => s.stockSymbol === symbol);
+
+          // The main stock object from the pre-loaded `this.stocks` array
+          const mainStockData = this.stocks.find(s => s.symbol === symbol) || {};
+
+          return {
+            symbol: symbol,
+            name: mainStockData.name || (symbolSentiments.length > 0 ? symbolSentiments[0].companyName : 'N/A'),
+            sentimentValue: mainStockData.dailySentiment, // Assumes this is already loaded from the '/api/sentiments' call
+            lastTen: symbolSentiments.map(s => s.sentimentValue) // This populates the chart data
+          };
+        });
+
+
+      } catch (error) {
+        this.loadingError = `Failed to load followed stocks. ${error.message}`;
+        console.error(error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    // --- OPTIMIZED METHODS ---
+
+    async addStockFromAll(symbol) {
+      if (window.event) {
+        window.event.stopPropagation();
+      }
+      this.addStockError = null;
+      if (!this.userEmail) {
+        this.addStockError = 'Please log in to follow stocks.';
+        return;
+      }
+      if (this.isStockFollowed(symbol)) {
+        this.addStockError = `${symbol} is already followed.`;
+        return;
+      }
+
+      // Optimistic Update
+      const stockToAdd = this.stocks.find(s => s.symbol === symbol);
+      if (stockToAdd) {
+        this.followedStocks.push({
+          symbol: stockToAdd.symbol,
+          name: stockToAdd.name,
+          sentimentValue: stockToAdd.dailySentiment,
+          lastTen: stockToAdd.lastTen || [],
+        });
+      }
+
+      // API call in background
+      try {
+        const response = await fetch(`${this.base_url}/api/followStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+      } catch (error) {
+        this.addStockError = `Error following stock: ${error.message}`;
+        // Rollback on failure
+        this.followedStocks = this.followedStocks.filter(s => s.symbol !== symbol);
+        alert(`Failed to follow ${symbol}. Please try again.`);
+      }
+    },
+
+    async addStockFromInput() {
+      this.addStockError = null;
+      const symbol = this.searchQuery.trim().toUpperCase();
+      if (!symbol) return;
+
+      const stockExists = this.stocks.some(s => s.symbol === symbol);
+      if (!stockExists) {
+        this.addStockError = `${symbol} is not a valid stock symbol.`;
+        return;
+      }
+      if (this.isStockFollowed(symbol)) {
+        this.addStockError = `${symbol} is already followed.`;
+        return;
+      }
+
+      this.searchQuery = '';
+      this.showSuggestions = false;
+
+      // Optimistic Update
+      const stockToAdd = this.stocks.find(s => s.symbol === symbol);
+      if (stockToAdd) {
+        this.followedStocks.push({
+          symbol: stockToAdd.symbol,
+          name: stockToAdd.name,
+          sentimentValue: stockToAdd.dailySentiment,
+          lastTen: stockToAdd.lastTen || [],
+        });
+      }
+
+      // API call in background
+      try {
+        this.isAddingStock = true;
+        const response = await fetch(`${this.base_url}/api/followStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+      } catch (error) {
+        this.addStockError = `Error following stock: ${error.message}`;
+        // Rollback on failure
+        this.followedStocks = this.followedStocks.filter(s => s.symbol !== symbol);
+        alert(`Failed to follow ${symbol}. Please try again.`);
+      } finally {
+        this.isAddingStock = false;
+      }
+    },
+
+    async removeStock(symbol) {
+      if (window.event) {
+        window.event.stopPropagation();
+      }
+
+      // Optimistic Update
+      const stockIndex = this.followedStocks.findIndex(s => s.symbol === symbol);
+      if (stockIndex === -1) return;
+      const removedStock = this.followedStocks[stockIndex];
+      this.followedStocks.splice(stockIndex, 1);
+
+      // API call in background
+      try {
+        const response = await fetch(`${this.base_url}/api/unfollowStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
+      } catch (error) {
+        console.error("Failed to remove stock:", error);
+        // Rollback on failure
+        this.followedStocks.splice(stockIndex, 0, removedStock);
+        alert(`Error unfollowing ${symbol}: ${error.message}`);
+      }
     },
   }
 };
