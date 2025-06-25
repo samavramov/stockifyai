@@ -24,10 +24,9 @@ public class apiHandler implements HttpHandler {
 
     // This list is used for the "All Stocks" view on the homepage
     private static final List<String> SYMBOLS = Arrays.asList(
-            "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "NFLX", "CRM", "ORCL",
-            "ADBE", "INTC", "AMD", "PYPL", "UBER", "SPOT", "ZOOM", "TWTR", "SNAP", "SQ",
-            "SHOP", "ROKU", "PINS", "DOCU", "PLTR", "COIN", "HOOD", "RBLX", "U", "DDOG"
-    );
+            "AAPL", "AMD", "AMZN", "AVGO", "BA", "COIN", "DIS", "GME", "GOOGL", "INTC", "LCID", "META", "MSFT", "MU",
+            "NFLX", "NVDA", "ORCL", "PLTR", "PYPL", "QCOM", "RBLX", "SHOP", "SNAP", "SOFI", "SPOT", "TSLA", "UBER",
+            "WBD", "ZOOM");
 
     public apiHandler(String frontendUrl, databaseInteractions db) {
         this.frontendUrl = frontendUrl;
@@ -110,7 +109,7 @@ public class apiHandler implements HttpHandler {
                 sendJsonError(exchange, 400, "Request body must contain a 'symbols' array.");
                 return;
             }
-            
+
             int limit = root.has("limit") ? root.get("limit").asInt() : 10;
 
             // Make one efficient call to the database
@@ -133,7 +132,6 @@ public class apiHandler implements HttpHandler {
         }
     }
 
-
     /**
      * Handles GET /api/sentiments. This is now optimized for the "all stocks" case.
      */
@@ -146,12 +144,12 @@ public class apiHandler implements HttpHandler {
             if (symbolParam != null && !symbolParam.isEmpty()) {
                 // --- Case 1: Request for a single stock's history (for detail page chart) ---
                 ArrayList<sentiment> sentiments = db.getLatestSentimentsByStockSymbol(symbolParam, limit);
-                
+
                 // The frontend needs the calculated values on the most recent entry
                 if (!sentiments.isEmpty()) {
                     processSingleStockHistory(sentiments);
                 }
-                
+
                 String json = mapper.writeValueAsString(sentiments);
                 sendJsonResponse(exchange, 200, json);
 
@@ -159,10 +157,10 @@ public class apiHandler implements HttpHandler {
                 // --- Case 2: Request for all stocks (for main dashboard) ---
                 // This now uses ONE database call instead of a loop of 30 calls.
                 ArrayList<sentiment> rawSentiments = db.getLatestSentimentsForSymbols(SYMBOLS, 10);
-                
+
                 // Process the raw data (group by symbol, calculate averages, etc.)
                 ArrayList<sentiment> processedSentiments = processRawSentiments(rawSentiments);
-                
+
                 String json = mapper.writeValueAsString(processedSentiments);
                 sendJsonResponse(exchange, 200, json);
             }
@@ -180,21 +178,23 @@ public class apiHandler implements HttpHandler {
     /**
      * A helper method to process a flat list of sentiment data, group it by symbol,
      * and calculate aggregate values for the most recent entry of each symbol.
+     * 
      * @param rawSentiments A flat list of sentiment objects from the database.
-     * @return A list containing only the most recent sentiment object for each stock, augmented with calculated data.
+     * @return A list containing only the most recent sentiment object for each
+     *         stock, augmented with calculated data.
      */
     private ArrayList<sentiment> processRawSentiments(List<sentiment> rawSentiments) {
         // Group the flat list of sentiments by their stock symbol
         Map<String, List<sentiment>> groupedBySymbol = rawSentiments.stream()
-            .collect(Collectors.groupingBy(s -> s.stockSymbol));
+                .collect(Collectors.groupingBy(s -> s.stockSymbol));
 
         ArrayList<sentiment> processedSentiments = new ArrayList<>();
         for (Map.Entry<String, List<sentiment>> entry : groupedBySymbol.entrySet()) {
             List<sentiment> stockSentiments = entry.getValue(); // These are already sorted DESC by date from the DB
-            
+
             // Augment the most recent entry with calculated data
             processSingleStockHistory(stockSentiments);
-            
+
             // Add only the most recent (and now augmented) sentiment to the final list
             processedSentiments.add(stockSentiments.get(0));
         }
@@ -202,8 +202,11 @@ public class apiHandler implements HttpHandler {
     }
 
     /**
-     * A helper to calculate and set aggregate data on the most recent sentiment object in a list.
-     * @param stockHistory A list of sentiment objects for a single stock, sorted newest to oldest.
+     * A helper to calculate and set aggregate data on the most recent sentiment
+     * object in a list.
+     * 
+     * @param stockHistory A list of sentiment objects for a single stock, sorted
+     *                     newest to oldest.
      */
     private void processSingleStockHistory(List<sentiment> stockHistory) {
         if (stockHistory == null || stockHistory.isEmpty()) {
@@ -221,7 +224,7 @@ public class apiHandler implements HttpHandler {
         if (stockHistory.size() > 1) {
             double recent = stockHistory.get(0).sentimentValue;
             double previous = stockHistory.get(1).sentimentValue;
-            percentChange = ((recent+1) - (previous+1) / 2);
+            percentChange = ((((recent + 1) - (previous + 1)) / 2) * 100);
         }
 
         // Get the most recent record to set the calculated values on
@@ -230,7 +233,6 @@ public class apiHandler implements HttpHandler {
         mostRecent.percentChange = percentChange;
         mostRecent.lastTen = lastTenValues;
     }
-
 
     public void handleGetUser(HttpExchange exchange) throws IOException {
         String email = getQueryParam(exchange.getRequestURI().getQuery(), "email");
@@ -292,9 +294,9 @@ public class apiHandler implements HttpHandler {
             System.err.println("Database error in handleFollowStock:");
             e.printStackTrace();
             if (e.getErrorCode() == 2291) {
-                 sendJsonError(exchange, 400, "Cannot follow stock, user does not exist.");
+                sendJsonError(exchange, 400, "Cannot follow stock, user does not exist.");
             } else {
-                 sendJsonError(exchange, 500, "Database error while following stock.");
+                sendJsonError(exchange, 500, "Database error while following stock.");
             }
         }
     }
@@ -305,7 +307,7 @@ public class apiHandler implements HttpHandler {
             JsonNode root = mapper.readTree(body);
             String email = root.path("email").asText();
             String stock = root.path("stockSymbol").asText();
-            
+
             boolean success = db.unfollowStock(email, stock);
             if (success) {
                 sendJsonResponse(exchange, 200, "{\"status\":\"unfollowed\"}");
@@ -352,7 +354,7 @@ public class apiHandler implements HttpHandler {
         exchange.sendResponseHeaders(405, -1);
         exchange.close();
     }
-    
+
     private void handleOptionsRequest(HttpExchange exchange) throws IOException {
         setCorsHeaders(exchange);
         exchange.sendResponseHeaders(204, -1);
@@ -360,7 +362,8 @@ public class apiHandler implements HttpHandler {
     }
 
     private String getQueryParam(String query, String param) {
-        if (query == null) return null;
+        if (query == null)
+            return null;
         for (String pair : query.split("&")) {
             String[] keyVal = pair.split("=", 2);
             if (keyVal.length > 0 && keyVal[0].equals(param)) {

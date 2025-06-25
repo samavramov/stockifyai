@@ -80,42 +80,39 @@ public class Server {
         if (pop) {
             System.out.println("Populating database with initial randomized stock data...");
             try {
-                // --- The Robust Fix: Use a data structure that pairs the ticker and name ---
-                // This Map ensures the ticker and name can never be out of sync.
-                Map<String, String> companyData = new LinkedHashMap<>(); // Use LinkedHashMap to maintain insertion
-                                                                         // order
+                // --- Updated: Use the specific list of stocks provided by the user ---
+                Map<String, String> companyData = new LinkedHashMap<>();
                 companyData.put("AAPL", "Apple Inc.");
-                companyData.put("MSFT", "Microsoft Corporation");
-                companyData.put("GOOGL", "Alphabet Inc.");
-                companyData.put("AMZN", "Amazon.com Inc.");
-                companyData.put("TSLA", "Tesla Inc.");
-                companyData.put("META", "Meta Platforms Inc.");
-                companyData.put("NVDA", "NVIDIA Corporation");
-                companyData.put("NFLX", "Netflix Inc.");
-                companyData.put("CRM", "Salesforce, Inc.");
-                companyData.put("ORCL", "Oracle Corporation");
-                companyData.put("ADBE", "Adobe Inc.");
-                companyData.put("INTC", "Intel Corporation");
                 companyData.put("AMD", "Advanced Micro Devices");
-                companyData.put("PYPL", "PayPal Holdings Inc.");
-                companyData.put("UBER", "Uber Technologies Inc.");
-                companyData.put("SPOT", "Spotify Technology SA");
-                companyData.put("ZOOM", "Zoom Video Communications");
-                companyData.put("TWTR", "X Corp. (Twitter)");
-                companyData.put("SNAP", "Snap Inc.");
-                companyData.put("SQ", "Block, Inc.");
-                companyData.put("SHOP", "Shopify Inc.");
-                companyData.put("ROKU", "Roku, Inc.");
-                companyData.put("PINS", "Pinterest, Inc.");
-                companyData.put("DOCU", "DocuSign, Inc.");
-                companyData.put("PLTR", "Palantir Technologies");
+                companyData.put("AMZN", "Amazon.com Inc.");
+                companyData.put("AVGO", "Broadcom Inc.");
+                companyData.put("BA", "Boeing Company");
                 companyData.put("COIN", "Coinbase Global Inc.");
-                companyData.put("HOOD", "Robinhood Markets, Inc.");
+                companyData.put("DIS", "Walt Disney Co.");
+                companyData.put("GME", "GameStop Corp.");
+                companyData.put("GOOGL", "Alphabet Inc.");
+                companyData.put("INTC", "Intel Corporation");
+                companyData.put("LCID", "Lucid Group Inc.");
+                companyData.put("META", "Meta Platforms Inc.");
+                companyData.put("MSFT", "Microsoft Corporation");
+                companyData.put("MU", "Micron Technology Inc.");
+                companyData.put("NFLX", "Netflix Inc.");
+                companyData.put("NVDA", "NVIDIA Corporation");
+                companyData.put("ORCL", "Oracle Corporation");
+                companyData.put("PLTR", "Palantir Technologies");
+                companyData.put("PYPL", "PayPal Holdings Inc.");
+                companyData.put("QCOM", "Qualcomm Incorporated");
                 companyData.put("RBLX", "Roblox Corporation");
-                companyData.put("U", "Unity Software Inc.");
-                companyData.put("DDOG", "Datadog, Inc.");
+                companyData.put("SHOP", "Shopify Inc.");
+                companyData.put("SNAP", "Snapchat Inc.");
+                companyData.put("SOFI", "SoFi Technologies Inc.");
+                companyData.put("SPOT", "Spotify Technology SA");
+                companyData.put("TSLA", "Tesla Inc.");
+                companyData.put("UBER", "Uber Technologies Inc.");
+                companyData.put("WBD", "Warner Bros. Discovery Inc.");
+                companyData.put("ZOOM", "Zoom Video Communications");
 
-                // Convert the Map keys to an array for easy random selection
+                // Convert the Map keys to an array for easy iteration
                 String[] tickers = companyData.keySet().toArray(new String[0]);
 
                 String[] positiveSummaries = {
@@ -134,11 +131,12 @@ public class Server {
                 };
 
                 Random random = new Random();
-                List<sentiment> sampleStocks = new ArrayList<>();
+                // Looping 11 times to generate a good amount of historical data (e.g., 10 past
+                // days + current)
                 for (int c = 0; c < 11; c++) {
-                    // Generate sentiment entries for all 30 stocks
+                    List<sentiment> sampleStocksForDay = new ArrayList<>();
+                    // Generate sentiment entries for all stocks in the updated list
                     for (int i = 0; i < tickers.length; i++) {
-                        // No need for a random index anymore if we want to add all of them
                         String ticker = tickers[i];
                         String name = companyData.get(ticker); // Get the name from the Map using the ticker
 
@@ -155,7 +153,7 @@ public class Server {
                             summary = "Market sentiment is neutral, with no significant catalysts observed.";
                         }
 
-                        sampleStocks.add(new sentiment(
+                        sampleStocksForDay.add(new sentiment(
                                 ticker,
                                 name,
                                 sentimentScore,
@@ -164,14 +162,18 @@ public class Server {
                                 "https://www.example.com/" + ticker.toLowerCase() + "-news2",
                                 "https://www.example.com/" + ticker.toLowerCase() + "-news3",
                                 summary));
-                        Thread.sleep(10); // Sleep to ensure unique timestamps and avoid the ORA-00001 error
+                        // Small sleep to ensure distinct timestamps, crucial for some database systems
+                        Thread.sleep(10);
                     }
 
                     // Loop through the list and add each generated stock to the database
-                    for (sentiment stock : sampleStocks) {
+                    for (sentiment stock : sampleStocksForDay) {
                         System.out.println("Adding sentiment for: " + stock.stockSymbol);
                         db.addSentiment(stock);
                     }
+                    System.out.println("===================================================================");
+                    System.out.println("Added sentiment array " + c + " times");
+                    System.out.println("===================================================================");
                 }
 
                 System.out.println("Database population complete.");
@@ -207,7 +209,7 @@ public class Server {
         // --- 3. POPULATE DATABASE WITH SAMPLE DATA ---
         System.out.println("Populating database with initial stock data...");
         try {
-            populateDataRand(db, false);
+            populateDataRand(db,false);
             System.out.println("Database population complete.");
 
         } catch (Exception e) {
