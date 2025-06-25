@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import './index.css'
 import VueApexCharts from 'vue3-apexcharts'
+import { nextTick } from 'vue';
 
 // Import components
 import Landing from './components/Landing.vue'
@@ -35,10 +36,10 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior() {
     return { top: 0 };
   }
-})
+});
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 let isInOAuthFlow = false;

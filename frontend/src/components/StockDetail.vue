@@ -4,15 +4,16 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <div class="flex items-center">
-
-            <h1 class="text-2xl font-bold text-gray-900 flex items-center">{{ symbol }}</h1>
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center hidden md:block">{{ symbol }}</h1>
+            <div class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md md:hidden">
+              {{ symbol }}
+            </div>
             <span class="ml-3 text-lg text-gray-600 flex items-center">
               {{ currentStock?.companyName || 'Loading...' }}
             </span>
           </div>
           <div class="text-right flex items-center">
-            <button @click="goBack"
-              class="mr-4 p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200 flex items-center">
+            <button @click="goBack" class="mr-4 p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200 flex items-center">
               ← Back
             </button>
           </div>
@@ -24,10 +25,13 @@
         <div class="lg:col-span-2">
           <div class="bg-white rounded-xl shadow-lg p-6">
             <div class="flex justify-between items-center mb-6">
-              <h3 class="text-xl font-semibold text-gray-900">
+              <h3 class="text-xl font-semibold text-gray-900 hidden md:block ">
                 {{ activeChart === 'current' ? 'Current Sentiment' : '10-Day Average' }} Trend
               </h3>
-              <div class="flex items-center space-x-3">
+              <h3 class="text-xl font-semibold text-gray-900 md:hidden text-center justify-center flex w-full">
+                {{ activeChart === 'current' ? 'Current Sentiment' : '10-Day Average' }} Trend
+              </h3>
+              <div class="flex items-center space-x-3 hidden md:block ">
                 <span :class="activeChart === 'current' ? 'text-royalpurple-500 font-medium' : 'text-gray-500'"
                   class="text-sm transition-colors duration-200">
                   Current Sentiment
@@ -39,7 +43,6 @@
                     class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out"
                     :class="activeChart === 'average' ? 'translate-x-6' : 'translate-x-1'"></span>
                 </button>
-
                 <span :class="activeChart === 'average' ? 'text-royalpurple-500 font-medium' : 'text-gray-500'"
                   class="text-sm transition-colors duration-200">
                   10-Day Average
@@ -64,6 +67,23 @@
               </h4>
               <ApexChart type="line" :options="lineOptions" :series="[{ name: 'Sentiment', data: reversedLastTen }]"
                 height="240" class="w-full" />
+            </div>
+            <div class="flex items-center space-x-3 md:hidden my-3 justify-center">
+              <span :class="activeChart === 'current' ? 'text-royalpurple-500 font-medium' : 'text-gray-500'"
+                class="text-sm transition-colors duration-200">
+                Current Sentiment
+              </span>
+              <button @click="toggleChart"
+                class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-royalpurple-500 focus:ring-offset-2"
+                :class="activeChart === 'average' ? 'bg-royalpurple-500' : 'bg-gray-400'">
+                <span
+                  class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out"
+                  :class="activeChart === 'average' ? 'translate-x-6' : 'translate-x-1'"></span>
+              </button>
+              <span :class="activeChart === 'average' ? 'text-royalpurple-500 font-medium' : 'text-gray-500'"
+                class="text-sm transition-colors duration-200">
+                10-Day Average
+              </span>
             </div>
           </div>
         </div>
@@ -201,6 +221,7 @@ export default {
       API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
       isFollowed: false,
       isFollowing: false,
+      isMobile: false, // <-- ADD THIS
       stockData: {
         stockSymbol: '',
         companyName: '',
@@ -496,16 +517,16 @@ export default {
         d.setDate(today.getDate() - offset);
         return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
       });
+
       return {
         chart: {
           id: 'last-ten-sentiment-chart',
           toolbar: { show: false },
           zoom: { enabled: false }
         },
-        colors: ['#543ade'],
         xaxis: {
           categories,
-          title: { text: 'Date' },
+          title: { text: this.isMobile ? '' : 'Date' }, // <-- EDIT THIS LINE
           labels: { align: 'center' }
         },
         yaxis: {
@@ -514,11 +535,23 @@ export default {
           tickAmount: 4,
           title: { text: 'Sentiment Value' }
         },
-        stroke: { curve: 'smooth' },
+        stroke: {
+          curve: 'smooth',
+          width: 5 
+        },
         markers: { size: 4 },
         tooltip: {
           x: { show: false },
           y: { formatter: val => val.toFixed(2) }
+        },
+        plotOptions: {
+          line: {
+            colors: {
+              threshold: 0, 
+              colorAboveThreshold: '#16a34a', 
+              colorBelowThreshold: '#dc2626',
+            },
+          },
         }
       };
     }
@@ -526,6 +559,11 @@ export default {
   mounted() {
     this.loadStockData();
     this.checkIfFollowed();
+    this.checkIfMobile(); // <-- ADD THIS
+    window.addEventListener('resize', this.checkIfMobile); // <-- ADD THIS
+  },
+  beforeUnmount() { // <-- ADD THIS LIFECYCLE HOOK
+    window.removeEventListener('resize', this.checkIfMobile);
   },
   watch: {
     symbol() {
@@ -533,6 +571,9 @@ export default {
     }
   },
   methods: {
+    checkIfMobile() { // <-- ADD THIS METHOD
+      this.isMobile = window.innerWidth < 768; // Tailwind's 'md' breakpoint
+    },
     async checkIfFollowed() {
       const userEmail = localStorage.getItem('userEmail');
       if (!userEmail) {
@@ -552,7 +593,7 @@ export default {
       const userEmail = localStorage.getItem('userEmail');
       if (!userEmail) {
         alert('Please log in to follow stocks');
-        this.$router.push('/login'); // Redirect to login
+        this.$router.push('/login'); 
         return;
       }
       if (this.isFollowing) return;

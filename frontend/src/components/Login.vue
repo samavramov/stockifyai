@@ -1,7 +1,16 @@
 <template>
+  <nav class="w-full bg-white shadow flex items-center justify-between px-6 md:hidden">
+      <img src="../images/logo.png" alt="Stockify AI Logo" class="h-20 object-contain" />
+      <div class="text-right">
+        <button @click="goBack"
+          class="mr-4 p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200">
+          ← Back
+        </button>
+      </div>
+    </nav>
   <div
     class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex flex-col items-center justify-center px-4">
-    <div class="text-center mb-8">
+    <div class="text-center mb-8 hidden md:block">
       <h1 class="text-4xl font-merriweather font-bold text-white mb-2">stockify.ai</h1>
       <p class="text-xl text-blue-200">Stock Sentiment Tracker</p>
       <p class="text-sm text-blue-300 mt-2">Monitor market sentiment in real-time</p>
@@ -64,7 +73,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="M4.5 12a7.5 7.5 0 0 0 15 0m-15 0a7.5 7.5 0 1 1 15 0m-15 0H3m16.5 0H21m-1.5 0H12m-8.457 3.077 1.41-.513m14.095-5.13 1.41-.513M5.106 17.785l1.15-.964m11.49-9.642 1.149-.964M7.501 19.795l.75-1.3m7.5-12.99.75-1.3m-6.063 16.658.26-1.477m2.605-14.772.26-1.477m0 17.726-.26-1.477M10.698 4.614l-.26-1.477M16.5 19.794l-.75-1.299M7.5 4.205 12 12m6.894 5.785-1.149-.964M6.256 7.178l-1.15-.964m15.352 8.864-1.41-.513M4.954 9.435l-1.41-.514M12.002 12l-3.75 6.495" />
               </svg>
-              <span>Gain access to every feature of&nbsp;<span class="font-merriweather">stockify.ai</span></span>
+              <span>Gain access to every feature of stockify.ai</span>
             </li>
             <li class="flex items-center hover:text-white transition-colors duration-200 space-x-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"

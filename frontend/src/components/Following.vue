@@ -1,4 +1,4 @@
-<template>
+<<template>
   <nav class="w-full bg-white shadow flex items-center justify-between px-6">
     <img src="../images/logo.png" alt="Stockify AI Logo"
       class="h-20 sm:h-20 md:h-20 object-contain" />
@@ -12,11 +12,11 @@
   <hr class=" border-gray-200">
   <div class="bg-gray-50 px-6 py-6">
     <div class="mb-8">
-      <div v-if="isLoading" class="flex overflow-x-auto gap-4 pb-4">
-        <div v-for="i in 5" :key="i" class="min-w-full bg-white rounded-xl shadow-lg p-4 animate-pulse">
-          <div class="h-6 bg-gray-200 rounded mb-2"></div>
+      <div v-if="isLoading" class="grid grid-cols-2 md:flex md:overflow-x-auto gap-4 pb-4">
+        <div v-for="i in 4" :key="i" class="bg-white rounded-xl shadow-lg p-4 animate-pulse">
+          <div class="h-5 bg-gray-200 rounded mb-2 w-1/2"></div>
           <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-          <div class="h-8 bg-gray-200 rounded w-1/2 mx-auto"></div>
+          <div class="h-6 bg-gray-200 rounded w-1/2"></div>
         </div>
       </div>
 
@@ -24,14 +24,16 @@
         {{ loadingError }}
       </div>
 
-      <div v-else-if="sortedFollowedStocks.length > 0" class="flex overflow-x-auto gap-4 pb-4 stocks-scroll-container">
+      <div v-else-if="sortedFollowedStocks.length > 0"
+        class="grid grid-cols-2 gap-4 pb-4 md:flex md:overflow-x-auto md:gap-4 stocks-scroll-container">
         <div v-for="stock in sortedFollowedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
-          class="min-w-[400px] bg-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-l-4"
+          class="bg-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-l-4 md:min-w-[400px]"
           :class="stock.percentChange >= 0 ? 'border-green-500' : 'border-red-500'">
           <div class="text-center">
-            <div class="text-lg font-bold text-gray-900">{{ stock.symbol }}</div>
-            <div class="text-sm text-gray-600 mb-2">{{ stock.name }}</div>
-            <div :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-xl font-bold">
+            <div class="text-base md:text-lg font-bold text-gray-900">{{ stock.symbol }}</div>
+            <div class="text-xs md:text-sm text-gray-600 mb-2 truncate">{{ stock.name }}</div>
+            <div :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
+              class="text-lg md:text-xl font-bold">
               {{ stock.percentChange > 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
             </div>
             <div class="text-xs text-gray-500 mt-1">
@@ -64,26 +66,28 @@
 
         <div v-else class="space-y-4">
           <div class="mb-6 relative">
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:items-start">
-              <div class="lg:col-span-2">
-                <input v-model="searchQuery" type="text" placeholder="Search stocks to follow..."
-                  class="w-full border border-gray-300 rounded-lg px-4 py-2" @keyup.enter="addStock"
-                  @input="onInputChange" />
-                <ul v-if="searchQuery && filteredStocks.length && showSuggestions"
-                  class="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-60 overflow-y-auto shadow-md">
-                  <li v-for="stock in filteredStocks" :key="stock.symbol" @click="selectStock(stock.symbol)"
-                    class="px-4 py-2 cursor-pointer hover:bg-gray-100">
-                    {{ stock.symbol }} - {{ stock.name }}
-                  </li>
-                </ul>
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-2">
+                <div class="relative flex-grow">
+                  <input v-model="searchQuery" type="text" placeholder="Search stocks to follow..."
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2" @keyup.enter="addStock"
+                    @input="onInputChange" />
+                  <ul v-if="searchQuery && filteredStocks.length && showSuggestions"
+                    class="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-60 overflow-y-auto shadow-md">
+                    <li v-for="stock in filteredStocks" :key="stock.symbol" @click="selectStock(stock.symbol)"
+                      class="px-4 py-2 cursor-pointer hover:bg-gray-100">
+                      {{ stock.symbol }} - {{ stock.name }}
+                    </li>
+                  </ul>
+                </div>
+                <div class="flex-shrink-0">
+                  <button :disabled="!searchQuery.trim()" @click="addStock"
+                    class="bg-royalpurple-500 text-white px-4 py-2 rounded-xl disabled:opacity-50">
+                    + Add Stock
+                  </button>
+                </div>
               </div>
-              <div class="lg:col-span-1">
-                <button :disabled="!searchQuery.trim()" @click="addStock"
-                  class="bg-royalpurple-500 text-white px-4 py-2 rounded-xl disabled:opacity-50">
-                  + Add Stock
-                </button>
-              </div>
-              <div class="relative lg:col-span-1">
+              <div class="relative">
                 <button @click="toggleSortDropdown"
                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-royalpurple-500 w-full justify-center">
                   Sort By
@@ -95,27 +99,16 @@
                   </svg>
                 </button>
                 <div v-if="showSortDropdown"
-                  class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                  class="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
                   <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                    <a href="#" @click.prevent="selectSort('symbol')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">Symbol</a>
-                    <a href="#" @click.prevent="selectSort('name')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">Company Name</a>
-                    <a href="#" @click.prevent="selectSort('dailySentiment')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">Daily Sentiment</a>
-                    <a href="#" @click.prevent="selectSort('tenDayAverage')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">10-Day Average</a>
-                    <a href="#" @click.prevent="selectSort('percentChange')"
-                      class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      role="menuitem">% Change</a>
+                    <a href="#" @click.prevent="selectSort('symbol')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">Symbol</a>
+                    <a href="#" @click.prevent="selectSort('name')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">Company Name</a>
+                    <a href="#" @click.prevent="selectSort('dailySentiment')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">Daily Sentiment</a>
+                    <a href="#" @click.prevent="selectSort('tenDayAverage')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">10-Day Average</a>
+                    <a href="#" @click.prevent="selectSort('percentChange')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">% Change</a>
                   </div>
                 </div>
               </div>
-
             </div>
             <div v-if="followedStocks.length === 0" class="text-center py-8 text-gray-500">
               <p>You are not following any stocks yet. Use the search bar above to add some!</p>
@@ -123,34 +116,62 @@
             <p v-if="isAddingStock" class="text-sm text-gray-500 mt-2">Adding stock...</p>
             <p v-if="addStockError" class="text-sm text-red-600 mt-2">{{ addStockError }}</p>
           </div>
+          
+          <div class="md:hidden">
+            <div class="divide-y divide-gray-200 rounded-xl shadow bg-white">
+              <div v-for="stock in followedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+                <div class="flex-shrink-0 mr-4">
+                  <div class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+                    {{ stock.symbol }}
+                  </div>
+                  <div class="text-sm text-gray-700 mt-1 w-24 truncate" :title="stock.name">{{ stock.name }}</div>
+                </div>
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                  <div class="text-right">
+                    <div class="text-sm font-semibold" :class="sentimentClass(stock.sentimentValue)">
+                      {{ stock.sentimentValue != null ? stock.sentimentValue.toFixed(2) : '—' }}
+                    </div>
+                    <div class="text-xs text-gray-500">Sentiment</div>
+                  </div>
+                  <div class="text-right">
+                    <div v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
+                      {{ stock.percentChange >= 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
+                    </div>
+                    <div v-else class="text-sm text-gray-400">—</div>
+                    <div class="text-xs text-gray-500">% Change</div>
+                  </div>
+                  <div class="flex-shrink-0">
+                    <button @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          <draggable v-model="followedStocks" item-key="symbol" handle=".drag-handle" @end="onDragEnd" tag="div"
-            class="space-y-4">
+          <draggable v-model="followedStocks" item-key="symbol" handle=".drag-handle" @end="onDragEnd" tag="div" class="space-y-4 hidden md:block">
             <template #item="{ element: stock }">
-              <div @click="goToStockDetail(stock.symbol)"
-                class="bg-white shadow rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center cursor-pointer hover:bg-gray-50 transition-colors">
-                <div class="mb-2 md:mb-0 flex-grow">
+              <div @click="goToStockDetail(stock.symbol)" class="bg-white shadow rounded-xl p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors">
+                <div class="flex-grow pr-4">
                   <h2 class="text-lg font-semibold">{{ stock.symbol }} - {{ stock.name }}</h2>
-                  <p class="text-sm text-gray-600">
-                    Current Sentiment: {{ stock.sentimentValue !== null ? stock.sentimentValue.toFixed(2) : 'Loading...'
-                    }}<br />
+                  <p class="text-sm text-gray-600 leading-relaxed">
+                    Current Sentiment: {{ stock.sentimentValue !== null ? stock.sentimentValue.toFixed(2) : 'Loading...' }}<br />
                     Ten Day Average: {{ stock.tenDayAverage !== null ? stock.tenDayAverage.toFixed(2) : 'N/A' }}<br />
                     Percent Change: {{ stock.percentChange !== null ? stock.percentChange.toFixed(2) + '%' : 'N/A' }}
                   </p>
                 </div>
-                <div class="flex items-center space-x-2">
+                <div class="flex items-center space-x-2 flex-shrink-0">
                   <div class="drag-handle cursor-grab p-2 rounded-md hover:bg-gray-200">
-                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
-                      </path>
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                   </div>
                   <button @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                      stroke="currentColor" class="size-6">
-                      <path stroke-linecap="round" stroke-linejoin="round"
-                        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                     </svg>
                   </button>
                 </div>
@@ -160,14 +181,15 @@
         </div>
       </div>
       <div class="lg:col-span-2">
-        <div class="bg-white rounded-xl p-6 shadow mb-8">
-          <h2 class="text-xl font-bold mb-4">Today's Sentiment Snapshot</h2>
-          <apexchart type="bar" height="350" :options="barChartOptions" :series="barChartSeries" />
-        </div>
-        <div class="bg-white rounded-xl p-6 shadow">
+        <div class="bg-white rounded-xl p-6 shadow my-4">
           <h2 class="text-xl font-bold mb-4">Sentiment Trends Over the Last 10 days
           </h2>
           <apexchart type="line" height="400" :options="chartOptions" :series="chartSeries" />
+        </div>
+        <break></break>
+        <div class="bg-white rounded-xl p-6 shadow mb-8">
+          <h2 class="text-xl font-bold mb-4">Today's Sentiment Snapshot</h2>
+          <apexchart type="bar" height="350" :options="barChartOptions" :series="barChartSeries" />
         </div>
       </div>
     </div>
@@ -203,6 +225,8 @@
 </template>
 
 <script>
+// The <script> block remains unchanged.
+// Paste your original <script> block here.
 import VueApexCharts from 'vue3-apexcharts'
 import draggable from 'vuedraggable'
 
@@ -225,6 +249,7 @@ export default {
       showSortDropdown: false,
       sortColumn: 'symbol',
       sortDirection: 'asc',
+      isMobile: false, // NEW: Add isMobile property
       allowedStocks: [
         { symbol: 'AAPL', name: 'Apple Inc.' },
         { symbol: 'QCOM', name: 'Qualcomm Incorporated' },
@@ -281,12 +306,33 @@ export default {
     barChartOptions() {
       return {
         chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: true } },
-        plotOptions: { bar: { distributed: true, borderRadius: 4, horizontal: false, } },
+        plotOptions: {
+          bar: {
+            distributed: true,
+            borderRadius: 4,
+            horizontal: false,
+            dataLabels: {
+              // Set the anchor point to the bottom of the bars
+              position: 'bottom',
+            },
+          }
+        },
+        tooltip: {
+            enabled: true,
+            y: {
+                formatter: (val) => val.toFixed(2)
+            }
+        },
+        dataLabels: {
+          enabled: false,
+          // For negative bars, this pushes the label DOWN (outside)
+          // For positive bars, this will be counteracted by the formatter
+        },
         colors: this.followedStocks.map(stock => {
           const value = stock.sentimentValue ?? 0;
-          if (value > 0.05) return '#16a34a';
-          if (value < -0.05) return '#dc2626';
-          return '#6b7280';
+          if (value > 0.05) return '#16a34a'; // Green
+          if (value < -0.05) return '#dc2626'; // Red
+          return '#6b7280'; // Gray
         }),
         xaxis: { categories: this.followedStocks.map(stock => stock.symbol), title: { text: 'Stock Symbols' } },
         yaxis: { min: -1, max: 1, title: { text: `Score For ${this.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` } },
@@ -315,12 +361,17 @@ export default {
       return {
         chart: { id: 'sentiment-line-chart', toolbar: { show: false }, animations: { easing: 'easeinout', speed: 400 } },
         xaxis: {
-          title: { text: 'Date' },
+          title: { text: this.isMobile ? '' : 'Date' }, // EDIT: Conditionally set title
           labels: { rotate: -45, formatter: (val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }
         },
         yaxis: { min: -1, max: 1, title: { text: 'Sentiment' } },
         stroke: { curve: 'smooth' },
-        tooltip: { enabled: true },
+        tooltip: {
+            enabled: true,
+            y: {
+                formatter: (val) => val.toFixed(2)
+            }
+        },
         legend: { position: 'bottom' }
       };
     },
@@ -335,11 +386,17 @@ export default {
   async mounted() {
     await this.loadInitialData();
     document.addEventListener('click', this.closeSortDropdownOnClickOutside);
+    this.checkIfMobile(); // NEW: Check on mount
+    window.addEventListener('resize', this.checkIfMobile); // NEW: Check on resize
   },
   beforeUnmount() {
     document.removeEventListener('click', this.closeSortDropdownOnClickOutside);
+    window.removeEventListener('resize', this.checkIfMobile); // NEW: Cleanup listener
   },
   methods: {
+    checkIfMobile() { // NEW: Method to check screen size
+      this.isMobile = window.innerWidth < 768; // Common breakpoint for mobile
+    },
     isFollowed(symbol) {
         return this.followedStocks.some(s => s.symbol === symbol);
     },
@@ -552,27 +609,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.stocks-scroll-container {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.stocks-scroll-container::-webkit-scrollbar {
-  display: none;
-}
-
-.sortable-ghost {
-  opacity: 0.5;
-  background-color: #f0f4f8;
-  border: 1px dashed #9ca3af;
-}
-
-.sortable-chosen {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  transform: rotate(2deg);
-}
-</style>
