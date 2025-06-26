@@ -43,7 +43,7 @@
           </button>
         </div>
       </div>
-      <div class="scroll-down-arrow">&#8659;</div>
+      <div class="scroll-down-arrow hidden md:block">&#8659;</div>
     </section>
     <section id="why-section" class="py-10 md:py-20 bg-gray-50 min-h-screen md:h-screen">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -103,8 +103,8 @@
           </div>
         </div>
       </div>
-      <div class="scroll-up-arrow">&#8657;</div>
-      <div class="scroll-down-arrow">&#8659;</div>
+      <div class="scroll-up-arrow hidden md:block">&#8657;</div>
+      <div class="scroll-down-arrow hidden md:block">&#8659;</div>
     </section>
     <section id="how-to-section"
       class="py-10 md:py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white min-h-screen md:h-screen">
@@ -188,11 +188,11 @@
           </div>
         </div>
       </div>
-      <div class="scroll-up-arrow">&#8657;</div>
-      <div class="scroll-down-arrow">&#8659;</div>
+      <div class="scroll-up-arrow hidden md:block">&#8657;</div>
+      <div class="scroll-down-arrow hidden md:block">&#8659;</div>
     </section>
     <section id="ready-section" class="py-10 md:py-20 bg-black text-black min-h-screen md:h-screen">
-      <div class="scroll-up-arrow text-white">&#8657;</div>
+      <div class="scroll-up-arrow text-white hidden md:block">&#8657;</div>
       <div class="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 px-4">
         <div
           class="bg-white/10 backdrop-blur-lg rounded-xl md:rounded-2xl p-6 md:p-8 shadow-2xl border border-white/20 text-white flex flex-col justify-center items-center space-y-4 md:space-y-6">

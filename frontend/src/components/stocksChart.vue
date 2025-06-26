@@ -1,16 +1,15 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <nav class="w-full bg-white shadow flex items-center justify-between px-6">
-      <img src="../images/logo.png" alt="Stockify AI Logo"
-        class="h-20 sm:h-20 md:h-20 object-contain" />
+      <img src="../images/logo.png" alt="Stockify AI Logo" class="h-20 sm:h-20 md:h-20 object-contain" />
       <div class="flex items-center space-x-4">
         <button @click="goToLogin"
           class="bg-royalpurple-500 text-white px-4 py-2 rounded-lg hover:bg-blue-900 transition-colors duration-200 flex items-center space-x-2 flashing-button">
-          <span >Sign In</span>
+          <span>Sign In</span>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
             stroke="currentColor" class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round"
-              d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 9 0 0 1 12 21a8.966 9 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 9 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
           </svg>
         </button>
       </div>
@@ -18,7 +17,7 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-8">
         <h2 class="text-3xl font-bold text-royalpurple-500 mb-4">Today's Top Movers</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 hidden md:grid">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           <div v-for="stock in trendingStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
             class="bg-white rounded-xl shadow-lg p-2 md:p-4 cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-l-4"
             :class="stock.percentChange >= 0 ? 'border-green-500' : 'border-red-500'">
@@ -39,28 +38,6 @@
             </div>
           </div>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:hidden">
-          <div v-for="stock in fourTrendingStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
-            class="bg-white rounded-xl shadow-lg p-2 md:p-4 cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-l-4"
-            :class="stock.percentChange >= 0 ? 'border-green-500' : 'border-red-500'">
-            <div class="text-center">
-              <div class="text-base md:text-lg font-bold text-gray-900">{{ stock.symbol }}</div>
-              <div class="text-xs md:text-sm text-gray-600 mb-1 md:mb-2">{{ stock.name }}</div>
-              <div :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
-                class="text-lg md:text-xl font-bold">
-                {{ stock.percentChange > 0 ? '+' : '' }}{{ stock.percentChange != null ? stock.percentChange.toFixed(2)
-                  : '—' }}%
-              </div>
-              <div class="text-xs text-gray-500 mt-1 hidden sm:block">
-                Sentiment:
-                <span :class="sentimentClass(stock.dailySentiment)" class="font-medium">
-                  {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
       <div class="mb-6 border-b border-gray-200">
         <nav class="flex space-x-4" aria-label="Tabs">
@@ -85,61 +62,72 @@
 
           <div class="md:hidden">
             <div class="divide-y divide-gray-200">
-              <div v-for="stock in stocks.slice(0, 8)" :key="stock.symbol" @click="goToStockDetail(stock.symbol)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+              <div class="bg-gray-50">
+                <div
+                  class="p-4 flex items-center justify-between text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div class="flex-shrink-0 w-24 text-left">Symbol</div>
+                  <div class="text-right flex-grow">Sentiment</div>
+                  <div class="text-right flex-grow">10-Day Avg.</div>
+                  <div class="text-right flex-grow">% Change</div>
+                </div>
+              </div>
+              <div v-for="stock in stocks.slice(0, 8)" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
+                class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
                 <div class="flex-shrink-0 mr-4">
-                  <div class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+                  <div
+                    class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
                     {{ stock.symbol }}
                   </div>
-                  <div class="text-sm text-gray-700 mt-1 w-24" :title="stock.name">{{ stock.name }}</div>
+                  <div class="text-sm text-gray-700 mt-1 w-24 truncate" :title="stock.name">{{ stock.name }}</div>
                 </div>
-                <div class="flex items-center space-x-3 sm:space-x-4">
-                  <div class="text-right">
+                <div class="flex items-center space-x-3 sm:space-x-4 flex-grow">
+                  <div class="text-right flex-grow">
                     <div class="text-sm font-semibold" :class="sentimentClass(stock.dailySentiment)">
                       {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}
                     </div>
-                    <div class="text-xs text-gray-500">Sentiment</div>
                   </div>
-                  <div class="text-right">
-                      <div class="text-sm font-semibold" :class="sentimentClass(stock.tenDayAverage)">
-                        {{ stock.tenDayAverage != null ? stock.tenDayAverage.toFixed(2) : '—' }}
-                      </div>
-                      <div class="text-xs text-gray-500">10 Day Avg.</div>
+                  <div class="text-right flex-grow">
+                    <div class="text-sm font-semibold" :class="sentimentClass(stock.tenDayAverage)">
+                      {{ stock.tenDayAverage != null ? stock.tenDayAverage.toFixed(2) : '—' }}
                     </div>
-                  <div class="text-right">
-                    <div v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
+                  </div>
+                  <div class="text-right flex-grow">
+                    <div v-if="stock.percentChange != null"
+                      :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
+                      class="text-sm font-semibold">
                       {{ stock.percentChange >= 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
                     </div>
                     <div v-else class="text-sm text-gray-400">—</div>
-                    <div class="text-xs text-gray-500">% Change</div>
                   </div>
                 </div>
               </div>
             </div>
-             <div class="p-4 text-center border-t border-gray-200">
-                <p class="text-gray-700 mb-4">Sign in to view sentiments for the entire market.</p>
-                <button @click="goToLogin" class="bg-royalpurple-500 text-white px-4 py-2 rounded-lg hover:bg-blue-900 transition-colors duration-200 text-md font-semibold flashing-button">
-                    Sign In to Unlock
-                </button>
+            <div class="p-4 text-center border-t border-gray-200">
+              <p class="text-gray-700 mb-4">Sign in to view sentiments for the entire market.</p>
+              <button @click="goToLogin"
+                class="bg-royalpurple-500 text-white px-4 py-2 rounded-lg hover:bg-blue-900 transition-colors duration-200 text-md font-semibold flashing-button">
+                Sign In to Unlock
+              </button>
             </div>
           </div>
-          
+
           <div class="overflow-x-auto hidden md:block">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Symbol
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Company Name
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Daily Sentiment
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     10-Day Average
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     % Change
                   </th>
                 </tr>
@@ -147,23 +135,23 @@
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-for="(stock, index) in stocks.slice(0, 8)" :key="stock.symbol"
                   @click="goToStockDetail(stock.symbol)" class="hover:bg-gray-50 cursor-pointer">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ stock.symbol }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ stock.name }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">{{ stock.symbol }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{{ stock.name }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span v-if="stock.dailySentiment !== null" :class="sentimentClass(stock.dailySentiment)"
                       class="text-sm font-semibold">
                       {{ stock.dailySentiment.toFixed(2) }}
                     </span>
                     <span v-else class="text-sm text-gray-400">—</span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span v-if="stock.tenDayAverage !== null" :class="sentimentClass(stock.tenDayAverage)"
                       class="text-sm font-semibold">
                       {{ stock.tenDayAverage.toFixed(2) }}
                     </span>
                     <span v-else class="text-sm text-gray-400">—</span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span v-if="stock.percentChange != null"
                       :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
                       class="text-sm font-semibold">
@@ -179,23 +167,23 @@
                 <tbody class="bg-white divide-y divide-gray-200 blur-sm opacity-50 pointer-events-none">
                   <tr v-for="(stock, index) in stocks.slice(8)" :key="stock.symbol"
                     class="hover:bg-gray-50 cursor-pointer">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"></td>
-                    <td class="px-6 py-4 whitespace-nowrap">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center"></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center"></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
                       <span v-if="stock.percentChange != null"
                         :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
                         class="text-sm font-semibold">
                       </span>
                       <span v-else class="text-sm text-gray-400">—</span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
                       <span v-if="stock.percentChange != null"
                         :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
                         class="text-sm font-semibold">
                       </span>
                       <span v-else class="text-sm text-gray-400">—</span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
                       <span v-if="stock.percentChange != null"
                         :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
                         class="text-sm font-semibold">
@@ -281,7 +269,7 @@
 import VueApexCharts from 'vue3-apexcharts';
 
 export default {
-  name: 'Dashboard', 
+  name: 'Dashboard',
   components: {
     apexchart: VueApexCharts
   },
@@ -331,28 +319,22 @@ export default {
       isLoading: true,
       loadingError: null,
       followedStocks: [],
+      windowWidth: window.innerWidth, // Add this for reactive width
     };
   },
   computed: {
     trendingStocks() {
-      // EDIT: This logic now correctly sources the top 5 movers ONLY from the first 8 stocks
-      // when the user is not signed in.
-      const sourceForTrending = this.stocks.slice(0, 8);
-      
-      return [...sourceForTrending]
-        .sort((a, b) => Math.abs(b.percentChange ?? 0) - Math.abs(a.percentChange ?? 0))
-        .slice(0, 5);
+      const sourceForTrending = this.stocks.slice(0, 8); // Always source from first 8 stocks
+      const sorted = [...sourceForTrending]
+        .sort((a, b) => Math.abs(b.percentChange ?? 0) - Math.abs(a.percentChange ?? 0));
+
+      // Dynamically display 4 stocks on small screens (e.g., < sm breakpoint)
+      // and 5 on larger screens. Tailwind's 'sm' breakpoint is typically 640px.
+      if (this.windowWidth < 640) {
+        return sorted.slice(0, 4);
+      }
+      return sorted.slice(0, 5);
     },
-    fourTrendingStocks() {
-      // EDIT: This logic now correctly sources the top 5 movers ONLY from the first 8 stocks
-      // when the user is not signed in.
-      const sourceForTrending = this.stocks.slice(0, 8);
-      
-      return [...sourceForTrending]
-        .sort((a, b) => Math.abs(b.percentChange ?? 0) - Math.abs(a.percentChange ?? 0))
-        .slice(0, 4);
-    },
-    // No changes needed for the rest of the computed properties
     lastTenDates() {
       const dates = [];
       const today = new Date();
@@ -405,13 +387,22 @@ export default {
     }
   },
   mounted() {
-    this.loadAllSentiments(); 
+    this.loadAllSentiments();
+    // Add event listener to update window width on resize
+    window.addEventListener('resize', this.updateWindowWidth);
+  },
+  beforeUnmount() {
+    // Remove event listener when component is unmounted
+    window.removeEventListener('resize', this.updateWindowWidth);
   },
   methods: {
+    // Method to update windowWidth
+    updateWindowWidth() {
+      this.windowWidth = window.innerWidth;
+    },
     goToLogin() {
       this.$router.push('/login')
     },
-    // The loadUserData and logout methods are removed as they are not used in this public component
     toggleDropdown() { this.showDropdown = !this.showDropdown; },
     closeDropdown() { this.showDropdown = false; },
     goToFollowingPage() { this.$router.push(`/following`); this.closeDropdown(); },
@@ -435,8 +426,6 @@ export default {
         console.error('Failed to load all sentiments:', err);
       }
     },
-    // The following methods are related to the authenticated experience and are not needed here,
-    // but are kept for structural consistency if you decide to add login state to this page later.
     onInputChange() {
       this.addStockError = null;
       this.showSuggestions = true;
@@ -452,7 +441,7 @@ export default {
       // This functionality is for logged-in users.
     },
     async removeStock(symbol) {
-     // This functionality is for logged-in users.
+      // This functionality is for logged-in users.
     },
   }
 };

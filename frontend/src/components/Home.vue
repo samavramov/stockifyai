@@ -18,16 +18,15 @@
           class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
           <button @click="goToFollowingPage"
             class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 inline-block">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
             <span>Following</span>
           </button>
           <hr class="my-2 border-gray-200">
           <button @click="logout"
             class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 inline-block">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
@@ -76,7 +75,8 @@
       <div>
         <div v-if="activeTab === 'all'" class="space-y-6">
           <div class="mb-8 flex justify-between items-center">
-            <h2 class="text-3xl font-bold text-royalpurple-500">Market Sentiment<span class="text-3xl font-bold text-royalpurple-500 hidden md:block"> Overview</span></h2>
+            <h2 class="text-3xl font-bold text-royalpurple-500">Market Sentiment <span
+              class="hidden md:inline">Overview</span></h2>
             <div class="relative">
               <button @click="toggleSortDropdown"
                 class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-royalpurple-500">
@@ -112,131 +112,105 @@
           </div>
         </div>
         <div v-if="activeTab === 'all'" class="bg-white rounded-xl shadow-lg overflow-hidden">
-          <hr class="border-gray-200">
+  <hr class="border-gray-200">
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr class="hidden md:table-row">
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company Name</th>
+          <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Sentiment</th>
+          <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">10-Day Average</th>
+          <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Change</th>
+          <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Follow</th>
+        </tr>
+        <tr class="md:hidden">
+          <th class="p-4 flex-shrink-0 mr-4 w-24 text-left font-semibold text-sm text-gray-600">Stock</th>
+          <th class="p-4 flex-grow text-right font-semibold text-sm text-gray-600">Sentiment</th>
+          <th class="p-4 flex-grow text-center font-semibold text-sm text-gray-600">Average</th>
+          <th class="p-4 flex-grow text-center font-semibold text-sm text-gray-600">Change</th>
+          <th class="p-4 flex-shrink-0 w-10 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 inline-block">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          </th>
+          <th class="p-4 flex-shrink-0 w-10"></th> </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr v-for="stock in sortedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)" class="hover:bg-gray-50 cursor-pointer">
+          <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ stock.symbol }}</td>
+          <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ stock.name }}</td>
+          <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-center">
+            <span v-if="stock.dailySentiment !== null" :class="sentimentClass(stock.dailySentiment)" class="font-semibold">
+              {{ stock.dailySentiment.toFixed(2) }}
+            </span>
+            <span v-else class="text-gray-400">—</span>
+          </td>
+          <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-center">
+            <span v-if="stock.tenDayAverage !== null" :class="stock.tenDayAverage >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">
+              {{ stock.tenDayAverage.toFixed(2) }}
+            </span>
+            <span v-else class="text-gray-400">—</span>
+          </td>
+          <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-center">
+            <span v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">
+              {{ stock.percentChange >= 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
+            </span>
+            <span v-else class="text-gray-400">—</span>
+          </td>
+          <td class="hidden md:table-cell px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+            <button v-if="isStockFollowed(stock.symbol)" @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+              </svg>
+            </button>
+            <button v-else @click.stop="addStockFromAll(stock.symbol)" class="text-royalpurple-500 hover:text-royalpurple-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-royalpurple-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
+          </td>
 
-          <div class="md:hidden">
-            <div class="divide-y divide-gray-200">
-              <div v-for="stock in sortedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
-                class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-                <div class="flex-shrink-0 mr-4">
-                  <div
-                    class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
-                    {{ stock.symbol }}
-                  </div>
-                  <div class="text-sm text-gray-700 mt-1 w-24" :title="stock.name">{{ stock.name }}</div>
-                </div>
-                <div class="flex items-center space-x-3 sm:space-x-4">
-                  <div class="text-right">
-                    <div class="text-sm font-semibold" :class="sentimentClass(stock.dailySentiment)">
-                      {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}
-                    </div>
-                    <div class="text-xs text-gray-500">Sentiment</div>
-                  </div>
-                  <div class="text-right">
-                    <div v-if="stock.tenDayAverage != null"
-                      :class="stock.tenDayAverage >= 0 ? 'text-green-600' : 'text-red-600'"
-                      class="text-sm font-semibold">
-                      {{ stock.tenDayAverage.toFixed(2) }}
-                    </div>
-                    <div v-else class="text-sm text-gray-400">—</div>
-                    <div class="text-xs text-gray-500">10 Day Avg.</div>
-                  </div>
-                  <div class="text-right">
-                    <div v-if="stock.percentChange != null"
-                      :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
-                      class="text-sm font-semibold">
-                      {{ stock.percentChange >= 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
-                    </div>
-                    <div v-else class="text-sm text-gray-400">—</div>
-                    <div class="text-xs text-gray-500">% Change</div>
-                  </div>
-                  <div class="flex-shrink-0">
-                    <button v-if="isStockFollowed(stock.symbol)" @click.stop="removeStock(stock.symbol)"
-                      class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor" class="size-5">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                          d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                      </svg>
-                    </button>
-                    <button v-else @click.stop="addStockFromAll(stock.symbol)"
-                      class="text-royalpurple-500 hover:text-royalpurple-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-royalpurple-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor" class="size-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <td class="md:hidden p-4 flex-shrink-0 mr-4">
+            <div class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+              {{ stock.symbol }}
             </div>
-          </div>
-
-          <div class="overflow-x-auto hidden md:block">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company
-                    Name</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily
-                    Sentiment</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">10-Day
-                    Average</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Change
-                  </th>
-                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Follow
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="stock in sortedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
-                  class="hover:bg-gray-50 cursor-pointer">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ stock.symbol }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ stock.name }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span v-if="stock.dailySentiment !== null" :class="sentimentClass(stock.dailySentiment)"
-                      class="font-semibold">
-                      {{ stock.dailySentiment.toFixed(2) }}
-                    </span>
-                    <span v-else class="text-gray-400">—</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span v-if="stock.tenDayAverage !== null" :class="sentimentClass(stock.tenDayAverage)"
-                      class="font-semibold">
-                      {{ stock.tenDayAverage.toFixed(2) }}
-                    </span>
-                    <span v-else class="text-gray-400">—</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span v-if="stock.percentChange != null"
-                      :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">
-                      {{ stock.percentChange.toFixed(2) + '%' }}
-                    </span>
-                    <span v-else class="text-gray-400">—</span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button v-if="isStockFollowed(stock.symbol)" @click.stop="removeStock(stock.symbol)"
-                      class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor" class="size-5">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                          d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                      </svg>
-                    </button>
-                    <button v-else @click.stop="addStockFromAll(stock.symbol)"
-                      class="text-royalpurple-500 hover:text-royalpurple-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-royalpurple-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor" class="size-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+            <div class="text-sm text-gray-700 mt-1 w-24 truncate" :title="stock.name">{{ stock.name }}</div>
+          </td>
+          <td class="md:hidden p-4 text-center">
+            <div class="text-sm font-semibold" :class="sentimentClass(stock.dailySentiment)">
+              {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}
+            </div>
+          </td>
+          <td class="md:hidden p-4 text-center">
+            <div v-if="stock.tenDayAverage != null" :class="stock.tenDayAverage >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
+              {{ stock.tenDayAverage.toFixed(2) }}
+            </div>
+            <div v-else class="text-sm text-gray-400">—</div>
+          </td>
+          <td class="md:hidden p-4 text-center">
+            <div v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
+              {{ stock.percentChange >= 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
+            </div>
+            <div v-else class="text-sm text-gray-400">—</div>
+          </td>
+          <td class="md:hidden p-4 text-center">
+            <button v-if="isStockFollowed(stock.symbol)" @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+              </svg>
+            </button>
+            <button v-else @click.stop="addStockFromAll(stock.symbol)" class="text-royalpurple-500 hover:text-royalpurple-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-royalpurple-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
         <div v-if="activeTab === 'followed'" class="space-y-6">
           <div class="mb-8">
             <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ userName }}'s Stocks</h2>
@@ -259,7 +233,7 @@
                   <ul v-if="searchQuery && filteredStocks.length && showSuggestions"
                     class="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-60 overflow-y-auto shadow-md">
                     <li v-for="stock in filteredStocks" :key="stock.symbol" @click="selectStock(stock.symbol)"
-                      class="px-4 py-2 cursor-pointer hover:bg-gray-100">
+                      class="px-4 py-2 cursor-pointer hover:bg-gray-100 truncated">
                       {{ stock.symbol }} - {{ stock.name }}
                     </li>
                   </ul>
@@ -284,15 +258,16 @@
               <div v-else-if="followedStocks.length === 0" class="text-center py-8 text-gray-500">
                 <p>You are not following any stocks yet.</p>
               </div>
-              <div v-else class="grid grid-cols-2 sm:grid-cols-1 gap-4"> <div v-for="stock in followedStocksWithDetails" :key="stock.symbol"
+              <div v-else class="grid grid-cols-2 sm:grid-cols-1 gap-4">
+                <div v-for="stock in followedStocksWithDetails" :key="stock.symbol"
                   @click="goToStockDetail(stock.symbol)"
                   class="bg-white shadow rounded-xl p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
                   <div>
                     <h2 class="text-lg font-semibold">{{ stock.symbol }} - {{ stock.name }}</h2>
                     <p class="text-sm text-gray-600">Sentiment: <span v-if="stock.sentimentValue != null"
-                      :class="stock.sentimentValue >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">
-                      {{ stock.sentimentValue.toFixed(2) }}
-                    </span></p>
+                        :class="stock.sentimentValue >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">
+                        {{ stock.sentimentValue.toFixed(2) }}
+                      </span></p>
                   </div>
                   <button @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -347,7 +322,7 @@
   </div>
 </template>
 
-<script>
+<<script>
 // The <script> block remains unchanged as the request was purely template-based.
 // Paste the original <script> block here.
 import VueApexCharts from 'vue3-apexcharts';
@@ -465,9 +440,16 @@ export default {
     },
     chartOptions() {
       return {
-        chart: { id: 'sentiment-line-chart', toolbar: { show: false } },
+        chart: {
+          id: 'sentiment-line-chart',
+          toolbar: { show: false },
+          // Disable zoom for the line chart based on isMobile
+          zoom: {
+            enabled: !this.isMobile,
+          }
+        },
         xaxis: {
-          title: { text: this.isMobile ? '' : 'Date' }, // EDIT: Conditionally set title text
+          title: { text: this.isMobile ? '' : 'Date' },
           labels: {
             rotate: -45,
             formatter: (val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -477,6 +459,54 @@ export default {
         stroke: { curve: 'smooth' },
         tooltip: { enabled: true },
         legend: { position: 'bottom' }
+      };
+    },
+    // NEW: Add barChartOptions computed property
+    barChartSeries() {
+      return [{
+        name: 'Daily Sentiment',
+        data: this.stocks.map(stock => ({
+          x: stock.symbol,
+          y: stock.dailySentiment ?? 0
+        }))
+      }];
+    },
+    barChartOptions() {
+      return {
+        chart: {
+          type: 'bar',
+          toolbar: { show: false },
+          animations: { enabled: true },
+          // Conditionally disable zoom for the bar chart based on isMobile
+          zoom: {
+            enabled: !this.isMobile, // Disable zoom if isMobile is true
+          }
+        },
+        plotOptions: {
+          bar: {
+            distributed: true,
+            borderRadius: 4,
+            horizontal: false,
+          }
+        },
+        tooltip: {
+            enabled: true,
+            y: {
+                formatter: (val) => val.toFixed(2)
+            }
+        },
+        dataLabels: {
+          enabled: false,
+        },
+        colors: this.stocks.map(stock => {
+          const value = stock.dailySentiment ?? 0;
+          if (value > 0.05) return '#16a34a'; // Green
+          if (value < -0.05) return '#dc2626'; // Red
+          return '#6b7280'; // Gray (neutral)
+        }),
+        xaxis: { categories: this.stocks.map(stock => stock.symbol), title: { text: 'Stock Symbols' } },
+        yaxis: { min: -1, max: 1, title: { text: `Sentiment Score` } },
+        legend: { show: false },
       };
     },
     filteredStocks() {
