@@ -21,7 +21,7 @@
         <div class="flex-grow flex flex-col items-center justify-center">
           <div class=" rounded-2xl -translate-y-4  text-white">
             <h2 class="text-3xl font-semibold mb-4">
-              Continue to <span class="font-merriweather">stockify.ai</span>
+              Continue to Dashboard
             </h2>
           </div>
           <button @click="loginWithGoogle"
@@ -55,7 +55,7 @@
 
         </div>
       </div>
-      <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 text-white">
+      <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 text-white hidden md:block">
         <h2 class="text-3xl font-semibold mb-4">Why Create an Account?</h2>
         <ul class="space-y-3 text-blue-100 text-lg">
           <ul class="space-y-2 text-grey">

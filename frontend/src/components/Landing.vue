@@ -6,17 +6,17 @@
         alt="Stockify AI Logo" class="h-20 sm:h-20 md:h-20 object-contain" />
       <div class="flex items-center space-x-2 sm:space-x-4">
         <button @click="goToLogin"
-          class="bg-royalpurple-500 text-white text-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg hover:bg-blue-900 transition-colors duration-200 flex items-center space-x-1 sm:space-x-2">
-          <span class="text-xs sm:text-base">Sign In</span>
+          class="bg-royalpurple-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-900 transition-colors duration-200 flex items-center space-x-1">
+          <span class="sm:text-base">Sign In</span>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-            stroke="currentColor" class="size-4 sm:size-5 md:size-6">
+            stroke="currentColor" class="size-4 md:size-6">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
           </svg>
         </button>
       </div>
     </nav>
-    <div id="section-nav" class="hidden md:flex">
+    <div id="section-nav" class="hidden md:flex" >
       <span class="nav-dot" data-target-id="hero-section"></span>
       <span class="nav-dot" data-target-id="why-section"></span>
       <span class="nav-dot" data-target-id="how-to-section"></span>
@@ -43,7 +43,7 @@
           </button>
         </div>
       </div>
-      <div class="scroll-down-arrow hidden md:block">&#8659;</div>
+      <div class="scroll-down-arrow">&#8659;</div>
     </section>
     <section id="why-section" class="py-10 md:py-20 bg-gray-50 min-h-screen md:h-screen">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -103,8 +103,8 @@
           </div>
         </div>
       </div>
-      <div class="scroll-up-arrow hidden md:block">&#8657;</div>
-      <div class="scroll-down-arrow hidden md:block">&#8659;</div>
+      <div class="scroll-up-arrow">&#8657;</div>
+      <div class="scroll-down-arrow">&#8659;</div>
     </section>
     <section id="how-to-section"
       class="py-10 md:py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white min-h-screen md:h-screen">
@@ -188,11 +188,11 @@
           </div>
         </div>
       </div>
-      <div class="scroll-up-arrow hidden md:block">&#8657;</div>
-      <div class="scroll-down-arrow hidden md:block">&#8659;</div>
+      <div class="scroll-up-arrow">&#8657;</div>
+      <div class="scroll-down-arrow">&#8659;</div>
     </section>
     <section id="ready-section" class="py-10 md:py-20 bg-black text-black min-h-screen md:h-screen">
-      <div class="scroll-up-arrow hidden md:block text-white">&#8657;</div>
+      <div class="scroll-up-arrow text-white">&#8657;</div>
       <div class="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 px-4">
         <div
           class="bg-white/10 backdrop-blur-lg rounded-xl md:rounded-2xl p-6 md:p-8 shadow-2xl border border-white/20 text-white flex flex-col justify-center items-center space-y-4 md:space-y-6">

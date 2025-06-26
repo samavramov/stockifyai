@@ -117,41 +117,53 @@
             <p v-if="addStockError" class="text-sm text-red-600 mt-2">{{ addStockError }}</p>
           </div>
           
-          <div class="md:hidden">
-            <div class="divide-y divide-gray-200 rounded-xl shadow bg-white">
-              <div v-for="stock in followedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-                <div class="flex-shrink-0 mr-4">
-                  <div class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
-                    {{ stock.symbol }}
-                  </div>
-                  <div class="text-sm text-gray-700 mt-1 w-24 truncate" :title="stock.name">{{ stock.name }}</div>
-                </div>
-                <div class="flex items-center space-x-3 sm:space-x-4">
-                  <div class="text-right">
-                    <div class="text-sm font-semibold" :class="sentimentClass(stock.sentimentValue)">
-                      {{ stock.sentimentValue != null ? stock.sentimentValue.toFixed(2) : '—' }}
+          <draggable v-model="followedStocks" item-key="symbol" handle=".drag-handle" @end="onDragEnd" tag="div" class="md:hidden space-y-4">
+            <template #item="{ element: stock }">
+              <div class="divide-y divide-gray-200 rounded-xl shadow bg-white">
+                <div @click="goToStockDetail(stock.symbol)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+                  <div class="flex-shrink-0 mr-4">
+                    <div class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+                      {{ stock.symbol }}
                     </div>
-                    <div class="text-xs text-gray-500">Sentiment</div>
+                    <div class="text-sm text-gray-700 mt-1 w-24 truncate" :title="stock.name">{{ stock.name }}</div>
                   </div>
-                  <div class="text-right">
-                    <div v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
-                      {{ stock.percentChange >= 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
+                  <div class="flex items-center space-x-3 sm:space-x-4">
+                    <div class="text-right">
+                      <div class="text-sm font-semibold" :class="sentimentClass(stock.sentimentValue)">
+                        {{ stock.sentimentValue != null ? stock.sentimentValue.toFixed(2) : '—' }}
+                      </div>
+                      <div class="text-xs text-gray-500">Sentiment</div>
                     </div>
-                    <div v-else class="text-sm text-gray-400">—</div>
-                    <div class="text-xs text-gray-500">% Change</div>
-                  </div>
-                  <div class="flex-shrink-0">
-                    <button @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                      </svg>
-                    </button>
+                    <div class="text-right">
+                      <div class="text-sm font-semibold" :class="sentimentClass(stock.tenDayAverage)">
+                        {{ stock.tenDayAverage != null ? stock.tenDayAverage.toFixed(2) : '—' }}
+                      </div>
+                      <div class="text-xs text-gray-500">10 Day Avg.</div>
+                    </div>
+                    <div class="text-right">
+                      <div v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
+                        {{ stock.percentChange >= 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
+                      </div>
+                      <div v-else class="text-sm text-gray-400">—</div>
+                      <div class="text-xs text-gray-500">% Change</div>
+                    </div>
+                    <div class="flex items-center flex-shrink-0">
+                      <button @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                      </button>
+                      <div class="drag-handle cursor-grab p-2 rounded-md hover:bg-gray-200">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
+            </template>
+          </draggable>
           <draggable v-model="followedStocks" item-key="symbol" handle=".drag-handle" @end="onDragEnd" tag="div" class="space-y-4 hidden md:block">
             <template #item="{ element: stock }">
               <div @click="goToStockDetail(stock.symbol)" class="bg-white shadow rounded-xl p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors">
@@ -182,7 +194,7 @@
       </div>
       <div class="lg:col-span-2">
         <div class="bg-white rounded-xl p-6 shadow my-4">
-          <h2 class="text-xl font-bold mb-4">Sentiment Trends Over the Last 10 days
+          <h2 class="text-xl font-bold mb-4">Followed Stocks - 10 Day Sentiment
           </h2>
           <apexchart type="line" height="400" :options="chartOptions" :series="chartSeries" />
         </div>

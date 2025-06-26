@@ -45,7 +45,7 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 let isInOAuthFlow = false;
 // 🔐 Navigation guard
 router.beforeEach(async (to, from, next) => {
-  const publicPaths = ['/', '/login', '/auth-success', '/stocks', '/privacy', '/terms', '/cookies', '/stock/AAPL', '/stock/ADBE', '/stock/AMD', 'stock/AMZN', 'stock/COIN', '/stock/CRM', '/stock/DDOG', '/stock/DOCU'];
+  const publicPaths = ['/', '/login', '/auth-success', '/stocks', '/privacy', '/terms', '/cookies', '/stock/AAPL', '/stock/AMD', '/stock/AMZN', '/stock/AVGO', '/stock/BA', '/stock/COIN', '/stock/DIS', '/stock/GME'];
   
   if (publicPaths.includes(to.path)) {
     return next();

@@ -230,7 +230,7 @@ export default {
         lastTen: [],
       },
       activeChart: 'average',
-      showAIModal: false,
+      showAIModal: true,
       stocks: [
         {
           symbol: 'AAPL',

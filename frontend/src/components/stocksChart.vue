@@ -6,18 +6,11 @@
       <div class="flex items-center space-x-4">
         <button @click="goToLogin"
           class="bg-royalpurple-500 text-white px-4 py-2 rounded-lg hover:bg-blue-900 transition-colors duration-200 flex items-center space-x-2 flashing-button">
-          <span>Sign In</span>
+          <span >Sign In</span>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
             stroke="currentColor" class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 9 0 0 1 12 21a8.966 9 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-          </svg>
-        </button>
-        <button @click="logout"
-          class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center space-x-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
         </button>
       </div>
@@ -25,26 +18,19 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-8">
         <h2 class="text-3xl font-bold text-royalpurple-500 mb-4">Today's Top Movers</h2>
-        <p class="text-gray-600 py-3">
-          To see the top 5 stocks across all data, please
-          <span @click="goToLogin" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400
-               cursor-pointer transition-all duration-300 ease-in-out
-               hover:from-blue-600 hover:to-purple-600 hover:underline flashing-button">
-            Sign In
-          </span>
-        </p>
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 hidden md:grid">
           <div v-for="stock in trendingStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
-            class="bg-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-l-4"
+            class="bg-white rounded-xl shadow-lg p-2 md:p-4 cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-l-4"
             :class="stock.percentChange >= 0 ? 'border-green-500' : 'border-red-500'">
             <div class="text-center">
-              <div class="text-lg font-bold text-gray-900">{{ stock.symbol }}</div>
-              <div class="text-sm text-gray-600 mb-2">{{ stock.name }}</div>
-              <div :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-xl font-bold">
+              <div class="text-base md:text-lg font-bold text-gray-900">{{ stock.symbol }}</div>
+              <div class="text-xs md:text-sm text-gray-600 mb-1 md:mb-2">{{ stock.name }}</div>
+              <div :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
+                class="text-lg md:text-xl font-bold">
                 {{ stock.percentChange > 0 ? '+' : '' }}{{ stock.percentChange != null ? stock.percentChange.toFixed(2)
                   : '—' }}%
               </div>
-              <div class="text-xs text-gray-500 mt-1">
+              <div class="text-xs text-gray-500 mt-1 hidden sm:block">
                 Sentiment:
                 <span :class="sentimentClass(stock.dailySentiment)" class="font-medium">
                   {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}
@@ -53,6 +39,28 @@
             </div>
           </div>
         </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:hidden">
+          <div v-for="stock in fourTrendingStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
+            class="bg-white rounded-xl shadow-lg p-2 md:p-4 cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-200 border-l-4"
+            :class="stock.percentChange >= 0 ? 'border-green-500' : 'border-red-500'">
+            <div class="text-center">
+              <div class="text-base md:text-lg font-bold text-gray-900">{{ stock.symbol }}</div>
+              <div class="text-xs md:text-sm text-gray-600 mb-1 md:mb-2">{{ stock.name }}</div>
+              <div :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
+                class="text-lg md:text-xl font-bold">
+                {{ stock.percentChange > 0 ? '+' : '' }}{{ stock.percentChange != null ? stock.percentChange.toFixed(2)
+                  : '—' }}%
+              </div>
+              <div class="text-xs text-gray-500 mt-1 hidden sm:block">
+                Sentiment:
+                <span :class="sentimentClass(stock.dailySentiment)" class="font-medium">
+                  {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
       <div class="mb-6 border-b border-gray-200">
         <nav class="flex space-x-4" aria-label="Tabs">
@@ -74,7 +82,48 @@
         </div>
         <div v-if="activeTab === 'all'" class="relative bg-white rounded-xl shadow-lg overflow-hidden">
           <hr class=" border-gray-200">
-          <div class="overflow-x-auto">
+
+          <div class="md:hidden">
+            <div class="divide-y divide-gray-200">
+              <div v-for="stock in stocks.slice(0, 8)" :key="stock.symbol" @click="goToStockDetail(stock.symbol)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+                <div class="flex-shrink-0 mr-4">
+                  <div class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+                    {{ stock.symbol }}
+                  </div>
+                  <div class="text-sm text-gray-700 mt-1 w-24" :title="stock.name">{{ stock.name }}</div>
+                </div>
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                  <div class="text-right">
+                    <div class="text-sm font-semibold" :class="sentimentClass(stock.dailySentiment)">
+                      {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}
+                    </div>
+                    <div class="text-xs text-gray-500">Sentiment</div>
+                  </div>
+                  <div class="text-right">
+                      <div class="text-sm font-semibold" :class="sentimentClass(stock.tenDayAverage)">
+                        {{ stock.tenDayAverage != null ? stock.tenDayAverage.toFixed(2) : '—' }}
+                      </div>
+                      <div class="text-xs text-gray-500">10 Day Avg.</div>
+                    </div>
+                  <div class="text-right">
+                    <div v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
+                      {{ stock.percentChange >= 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
+                    </div>
+                    <div v-else class="text-sm text-gray-400">—</div>
+                    <div class="text-xs text-gray-500">% Change</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+             <div class="p-4 text-center border-t border-gray-200">
+                <p class="text-gray-700 mb-4">Sign in to view sentiments for the entire market.</p>
+                <button @click="goToLogin" class="bg-royalpurple-500 text-white px-4 py-2 rounded-lg hover:bg-blue-900 transition-colors duration-200 text-md font-semibold flashing-button">
+                    Sign In to Unlock
+                </button>
+            </div>
+          </div>
+          
+          <div class="overflow-x-auto hidden md:block">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
@@ -173,8 +222,17 @@
         <div v-if="activeTab === 'followed'" class="space-y-6">
           <div class="mb-8 bg-white rounded-xl shadow-lg py-8">
             <div class="text-center">
-              <h2 class="text-3xl md:text-3xl font-bold mb-6">
+              <h2 class="text-3xl md:text-3xl font-bold mb-6 hidden md:block">
                 To view followed stocks and advanced analytics, please
+                <span @click="goToLogin" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400
+                 cursor-pointer
+                 transition-all duration-300 ease-in-out
+                 hover:from-blue-600 hover:to-purple-600 hover:underline flashing-button">
+                  sign in
+                </span>
+              </h2>
+              <h2 class="text-3xl md:text-3xl font-bold mb-6 md:hidden">
+                To view followed stocks, please
                 <span @click="goToLogin" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400
                  cursor-pointer
                  transition-all duration-300 ease-in-out
@@ -223,7 +281,7 @@
 import VueApexCharts from 'vue3-apexcharts';
 
 export default {
-  name: 'Dashboard', // Ensure this is 'Home' if that's your component name for routing clarity
+  name: 'Dashboard', 
   components: {
     apexchart: VueApexCharts
   },
@@ -277,16 +335,24 @@ export default {
   },
   computed: {
     trendingStocks() {
-      let sourceForTrending = [];
-      if (!this.userEmail) {
-        sourceForTrending = this.stocks.slice(0, 8);
-      } else {
-        sourceForTrending = this.stocks; // If signed in, use all stocks
-      }
+      // EDIT: This logic now correctly sources the top 5 movers ONLY from the first 8 stocks
+      // when the user is not signed in.
+      const sourceForTrending = this.stocks.slice(0, 8);
+      
       return [...sourceForTrending]
         .sort((a, b) => Math.abs(b.percentChange ?? 0) - Math.abs(a.percentChange ?? 0))
         .slice(0, 5);
     },
+    fourTrendingStocks() {
+      // EDIT: This logic now correctly sources the top 5 movers ONLY from the first 8 stocks
+      // when the user is not signed in.
+      const sourceForTrending = this.stocks.slice(0, 8);
+      
+      return [...sourceForTrending]
+        .sort((a, b) => Math.abs(b.percentChange ?? 0) - Math.abs(a.percentChange ?? 0))
+        .slice(0, 4);
+    },
+    // No changes needed for the rest of the computed properties
     lastTenDates() {
       const dates = [];
       const today = new Date();
@@ -339,56 +405,13 @@ export default {
     }
   },
   mounted() {
-    this.loadUserData();
     this.loadAllSentiments(); 
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   },
   methods: {
     goToLogin() {
       this.$router.push('/login')
     },
-    async loadUserData() {
-      try {
-        const sessionRes = await fetch(`${apiBaseUrl}/me`, {
-          credentials: 'include'
-        });
-        if (!sessionRes.ok) {
-          throw new Error('Not authenticated');
-        }
-
-        const sessionData = await sessionRes.json();
-        console.log('Session data from /me:', sessionData);
-
-        if (!sessionData.user || !sessionData.user.email) {
-          throw new Error('No user object or email found in session data');
-        }
-
-        this.userEmail = sessionData.user.email;
-        this.userName = sessionData.user.name;
-        this.userPicture = sessionData.user.picture;
-        await this.loadFollowedStocksData();
-      } catch (err) {
-        console.error('Failed to load user data:', err);
-        this.userEmail = ''; // Ensure userEmail is cleared if authentication fails
-        // No redirect here, as this is the public-facing Home.vue.
-        // The router guard in main.js handles protecting authenticated routes.
-      }
-    },
-    async logout() {
-      this.closeDropdown();
-      localStorage.clear();
-      sessionStorage.clear();
-      try {
-        const response = await fetch(`${apiBaseUrl}/logout`, { method: 'GET', credentials: 'include' });
-        if (!response.ok) {
-          console.error('Server-side logout failed:', response.statusText);
-        }
-      } catch (err) {
-        console.error('Network error during logout request:', err);
-      } finally {
-        this.$router.push('/'); // Redirect to the landing page or login page
-      }
-    },
+    // The loadUserData and logout methods are removed as they are not used in this public component
     toggleDropdown() { this.showDropdown = !this.showDropdown; },
     closeDropdown() { this.showDropdown = false; },
     goToFollowingPage() { this.$router.push(`/following`); this.closeDropdown(); },
@@ -412,6 +435,8 @@ export default {
         console.error('Failed to load all sentiments:', err);
       }
     },
+    // The following methods are related to the authenticated experience and are not needed here,
+    // but are kept for structural consistency if you decide to add login state to this page later.
     onInputChange() {
       this.addStockError = null;
       this.showSuggestions = true;
@@ -421,80 +446,13 @@ export default {
       this.showSuggestions = false;
     },
     async loadFollowedStocksData() {
-      if (!this.userEmail) {
-        this.followedStocks = [];
-        this.isLoading = false;
-        return;
-      }
-      this.isLoading = true;
-      this.loadingError = null;
-      try {
-        const symbolsResponse = await fetch(`${this.API_BASE_URL}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
-        if (!symbolsResponse.ok) throw new Error(`HTTP ${symbolsResponse.status}`);
-        const followedSymbols = await symbolsResponse.json();
-
-        const sentimentsResponse = await fetch(`${this.API_BASE_URL}/api/sentiments`);
-        if (!sentimentsResponse.ok) throw new Error(`HTTP ${sentimentsResponse.status}`);
-        const allSentiments = await sentimentsResponse.json();
-
-        this.followedStocks = followedSymbols.map(symbol => {
-          const stockData = allSentiments.find(s => s.stockSymbol === symbol); // Changed from s.symbol to s.stockSymbol
-          return stockData ? {
-            symbol: stockData.stockSymbol,
-            name: stockData.companyName,
-            sentimentValue: stockData.sentimentValue,
-            lastTen: stockData.lastTen || [],
-          } : { symbol, name: 'Data not found', sentimentValue: null, lastTen: [] };
-        });
-
-      } catch (error) {
-        this.loadingError = `Failed to load followed stocks. ${error.message}`;
-      } finally {
-        this.isLoading = false;
-      }
+      // This functionality is for logged-in users.
     },
     async addStock() {
-      this.addStockError = null;
-      const symbol = this.searchQuery.trim().toUpperCase();
-      if (!symbol) return;
-      if (!this.stocks.some(s => s.symbol === symbol)) {
-        this.addStockError = `${symbol} is not a valid stock symbol.`; return;
-      }
-      if (this.followedStocks.some(s => s.symbol === symbol)) {
-        this.addStockError = `${symbol} is already followed.`; return;
-      }
-      this.isAddingStock = true;
-      try {
-        const response = await fetch(`${this.API_BASE_URL}/api/followStock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
-        });
-        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-        await this.loadFollowedStocksData();
-        this.searchQuery = '';
-      } catch (error) {
-        this.addStockError = `Error following stock: ${error.message}`;
-      } finally {
-        this.isAddingStock = false;
-        this.showSuggestions = false;
-      }
+      // This functionality is for logged-in users.
     },
     async removeStock(symbol) {
-      try {
-        const response = await fetch(`${this.API_BASE_URL}/api/unfollowStock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
-        });
-        if (!response.ok) throw new Error(`Failed to unfollow stock: ${response.status}`);
-        await this.loadFollowedStocksData();
-      } catch (error) {
-        console.error("Failed to remove stock:", error);
-        alert(`Error: ${error.message}`);
-      }
+     // This functionality is for logged-in users.
     },
   }
 };

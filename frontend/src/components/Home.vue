@@ -49,7 +49,7 @@
               <div :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
                 class="text-lg md:text-xl font-bold">
                 {{ stock.percentChange > 0 ? '+' : '' }}{{ stock.percentChange != null ? stock.percentChange.toFixed(2)
-                : '—' }}%
+                  : '—' }}%
               </div>
               <div class="text-xs text-gray-500 mt-1 hidden sm:block">
                 Sentiment:
@@ -76,7 +76,7 @@
       <div>
         <div v-if="activeTab === 'all'" class="space-y-6">
           <div class="mb-8 flex justify-between items-center">
-            <h2 class="text-3xl font-bold text-royalpurple-500">Market Sentiment Overview</h2>
+            <h2 class="text-3xl font-bold text-royalpurple-500">Market Sentiment<span class="text-3xl font-bold text-royalpurple-500 hidden md:block"> Overview</span></h2>
             <div class="relative">
               <button @click="toggleSortDropdown"
                 class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-royalpurple-500">
@@ -113,12 +113,14 @@
         </div>
         <div v-if="activeTab === 'all'" class="bg-white rounded-xl shadow-lg overflow-hidden">
           <hr class="border-gray-200">
-          
+
           <div class="md:hidden">
             <div class="divide-y divide-gray-200">
-              <div v-for="stock in sortedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)" class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+              <div v-for="stock in sortedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
+                class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
                 <div class="flex-shrink-0 mr-4">
-                  <div class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+                  <div
+                    class="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold px-3 py-1 rounded-md">
                     {{ stock.symbol }}
                   </div>
                   <div class="text-sm text-gray-700 mt-1 w-24" :title="stock.name">{{ stock.name }}</div>
@@ -131,20 +133,36 @@
                     <div class="text-xs text-gray-500">Sentiment</div>
                   </div>
                   <div class="text-right">
-                    <div v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
+                    <div v-if="stock.tenDayAverage != null"
+                      :class="stock.tenDayAverage >= 0 ? 'text-green-600' : 'text-red-600'"
+                      class="text-sm font-semibold">
+                      {{ stock.tenDayAverage.toFixed(2) }}
+                    </div>
+                    <div v-else class="text-sm text-gray-400">—</div>
+                    <div class="text-xs text-gray-500">10 Day Avg.</div>
+                  </div>
+                  <div class="text-right">
+                    <div v-if="stock.percentChange != null"
+                      :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'"
+                      class="text-sm font-semibold">
                       {{ stock.percentChange >= 0 ? '+' : '' }}{{ stock.percentChange.toFixed(2) }}%
                     </div>
                     <div v-else class="text-sm text-gray-400">—</div>
                     <div class="text-xs text-gray-500">% Change</div>
                   </div>
                   <div class="flex-shrink-0">
-                    <button v-if="isStockFollowed(stock.symbol)" @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    <button v-if="isStockFollowed(stock.symbol)" @click.stop="removeStock(stock.symbol)"
+                      class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="size-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                          d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                       </svg>
                     </button>
-                    <button v-else @click.stop="addStockFromAll(stock.symbol)" class="text-royalpurple-500 hover:text-royalpurple-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-royalpurple-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                    <button v-else @click.stop="addStockFromAll(stock.symbol)"
+                      class="text-royalpurple-500 hover:text-royalpurple-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-royalpurple-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="size-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                       </svg>
                     </button>
@@ -153,49 +171,63 @@
               </div>
             </div>
           </div>
-          
+
           <div class="overflow-x-auto hidden md:block">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company Name</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Sentiment</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">10-Day Average</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Change</th>
-                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Follow</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company
+                    Name</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily
+                    Sentiment</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">10-Day
+                    Average</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Change
+                  </th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Follow
+                  </th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="stock in sortedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)" class="hover:bg-gray-50 cursor-pointer">
+                <tr v-for="stock in sortedStocks" :key="stock.symbol" @click="goToStockDetail(stock.symbol)"
+                  class="hover:bg-gray-50 cursor-pointer">
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ stock.symbol }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ stock.name }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span v-if="stock.dailySentiment !== null" :class="sentimentClass(stock.dailySentiment)" class="font-semibold">
+                    <span v-if="stock.dailySentiment !== null" :class="sentimentClass(stock.dailySentiment)"
+                      class="font-semibold">
                       {{ stock.dailySentiment.toFixed(2) }}
                     </span>
                     <span v-else class="text-gray-400">—</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span v-if="stock.tenDayAverage !== null" :class="sentimentClass(stock.tenDayAverage)" class="font-semibold">
+                    <span v-if="stock.tenDayAverage !== null" :class="sentimentClass(stock.tenDayAverage)"
+                      class="font-semibold">
                       {{ stock.tenDayAverage.toFixed(2) }}
                     </span>
                     <span v-else class="text-gray-400">—</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">
+                    <span v-if="stock.percentChange != null"
+                      :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">
                       {{ stock.percentChange.toFixed(2) + '%' }}
                     </span>
                     <span v-else class="text-gray-400">—</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button v-if="isStockFollowed(stock.symbol)" @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    <button v-if="isStockFollowed(stock.symbol)" @click.stop="removeStock(stock.symbol)"
+                      class="text-red-500 hover:text-red-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="size-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                          d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                       </svg>
                     </button>
-                    <button v-else @click.stop="addStockFromAll(stock.symbol)" class="text-royalpurple-500 hover:text-royalpurple-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-royalpurple-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                    <button v-else @click.stop="addStockFromAll(stock.symbol)"
+                      class="text-royalpurple-500 hover:text-royalpurple-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-royalpurple-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="size-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                       </svg>
                     </button>
@@ -219,26 +251,23 @@
         </div>
         <div v-if="activeTab === 'followed'">
           <div class="mb-6 relative item-center">
-            <div class="grid grid-cols-1 md:grid-cols-9 gap-4 items-center">
-              <div class="lg:col-span-8">
-                <input v-model="searchQuery" type="text" placeholder="Search stocks to follow..."
-                  class="w-full border border-gray-300 rounded-lg px-4 py-2" @keyup.enter="addStockFromInput"
-                  @input="onInputChange" />
-                <ul v-if="searchQuery && filteredStocks.length && showSuggestions"
-                  class="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-60 overflow-y-auto shadow-md">
-                  <li v-for="stock in filteredStocks" :key="stock.symbol" @click="selectStock(stock.symbol)"
-                    class="px-4 py-2 cursor-pointer hover:bg-gray-100">
-                    {{ stock.symbol }} - {{ stock.name }}
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <div class=" text-right">
-                  <button :disabled="!searchQuery.trim()" @click="addStockFromInput"
-                    class="bg-royalpurple-500 text-white px-4 py-2 rounded-xl disabled:opacity-50">
-                    + Add Stock
-                  </button>
+            <div class="grid grid-cols-1 md:grid-cols-1 gap-4 items-center">
+              <div class="lg:col-span-8 flex items-center space-x-4">
+                <div class="flex-grow"> <input v-model="searchQuery" type="text"
+                    placeholder="Search stocks to follow..." class="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    @keyup.enter="addStockFromInput" @input="onInputChange" />
+                  <ul v-if="searchQuery && filteredStocks.length && showSuggestions"
+                    class="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-60 overflow-y-auto shadow-md">
+                    <li v-for="stock in filteredStocks" :key="stock.symbol" @click="selectStock(stock.symbol)"
+                      class="px-4 py-2 cursor-pointer hover:bg-gray-100">
+                      {{ stock.symbol }} - {{ stock.name }}
+                    </li>
+                  </ul>
                 </div>
+                <button :disabled="!searchQuery.trim()" @click="addStockFromInput"
+                  class="bg-royalpurple-500 text-white px-4 py-2 rounded-xl disabled:opacity-50">
+                  + Add Stock
+                </button>
               </div>
               <p v-if="isAddingStock" class="text-sm text-gray-500 mt-2">Adding stock...</p>
               <p v-if="addStockError" class="text-sm text-red-600 mt-2">{{ addStockError }}</p>
@@ -255,13 +284,15 @@
               <div v-else-if="followedStocks.length === 0" class="text-center py-8 text-gray-500">
                 <p>You are not following any stocks yet.</p>
               </div>
-              <div v-else class="space-y-4">
-                <div v-for="stock in followedStocksWithDetails" :key="stock.symbol"
+              <div v-else class="grid grid-cols-2 sm:grid-cols-1 gap-4"> <div v-for="stock in followedStocksWithDetails" :key="stock.symbol"
                   @click="goToStockDetail(stock.symbol)"
                   class="bg-white shadow rounded-xl p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
                   <div>
                     <h2 class="text-lg font-semibold">{{ stock.symbol }} - {{ stock.name }}</h2>
-                    <p class="text-sm text-gray-600">Sentiment: {{ stock.sentimentValue.toFixed(2) ?? 'N/A' }}</p>
+                    <p class="text-sm text-gray-600">Sentiment: <span v-if="stock.sentimentValue != null"
+                      :class="stock.sentimentValue >= 0 ? 'text-green-600' : 'text-red-600'" class="font-semibold">
+                      {{ stock.sentimentValue.toFixed(2) }}
+                    </span></p>
                   </div>
                   <button @click.stop="removeStock(stock.symbol)" class="text-red-500 hover:text-red-700 p-2">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -486,101 +517,101 @@ export default {
     },
     // --- NEW, EFFICIENT DATA LOADING ORCHESTRATION ---
     async loadInitialData() {
-        this.isLoading = true;
-        this.loadingError = null;
-        try {
-            await this.loadUserData();
-            await this.fetchAllStockDataOnce();
-            await this.loadFollowedStocks();
-        } catch (error) {
-            console.error("Failed during initial data load:", error);
-            this.loadingError = error.message || "An unexpected error occurred.";
-            if (error.message.includes('Not authenticated')) {
-                this.$router.push('/login');
-            }
-        } finally {
-            this.isLoading = false;
+      this.isLoading = true;
+      this.loadingError = null;
+      try {
+        await this.loadUserData();
+        await this.fetchAllStockDataOnce();
+        await this.loadFollowedStocks();
+      } catch (error) {
+        console.error("Failed during initial data load:", error);
+        this.loadingError = error.message || "An unexpected error occurred.";
+        if (error.message.includes('Not authenticated')) {
+          this.$router.push('/login');
         }
+      } finally {
+        this.isLoading = false;
+      }
     },
 
     async loadUserData() {
-        if (this.userEmail) return;
-        try {
-            const sessionRes = await fetch(`${this.base_url}/me`, { credentials: 'include' });
-            if (!sessionRes.ok) throw new Error('Not authenticated');
-            const sessionData = await sessionRes.json();
-            if (!sessionData.user?.email) throw new Error('Invalid user session');
-            this.userEmail = sessionData.user.email;
-            this.userName = sessionData.user.name;
-            this.userPicture = sessionData.user.picture;
-        } catch (err) {
-            console.error('Session check failed:', err);
-            throw err;
-        }
+      if (this.userEmail) return;
+      try {
+        const sessionRes = await fetch(`${this.base_url}/me`, { credentials: 'include' });
+        if (!sessionRes.ok) throw new Error('Not authenticated');
+        const sessionData = await sessionRes.json();
+        if (!sessionData.user?.email) throw new Error('Invalid user session');
+        this.userEmail = sessionData.user.email;
+        this.userName = sessionData.user.name;
+        this.userPicture = sessionData.user.picture;
+      } catch (err) {
+        console.error('Session check failed:', err);
+        throw err;
+      }
     },
 
     async fetchAllStockDataOnce() {
-        try {
-            const response = await fetch(`${this.base_url}/api/sentiments`);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const allSentiments = await response.json();
+      try {
+        const response = await fetch(`${this.base_url}/api/sentiments`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const allSentiments = await response.json();
 
-            // Update the master `this.stocks` array with the fetched data
-            allSentiments.forEach(item => {
-                const stock = this.stocks.find(s => s.symbol === item.stockSymbol);
-                if (stock) {
-                    stock.dailySentiment = item.sentimentValue;
-                    stock.tenDayAverage = item.tenDayAverage;
-                    stock.percentChange = item.percentChange;
-                    stock.name = item.companyName || stock.name;
-                    stock.lastTen = item.lastTen || [];
-                }
-            });
-        } catch (err) {
-            console.error('Failed to load all stock sentiments:', err);
-            throw err;
-        }
+        // Update the master `this.stocks` array with the fetched data
+        allSentiments.forEach(item => {
+          const stock = this.stocks.find(s => s.symbol === item.stockSymbol);
+          if (stock) {
+            stock.dailySentiment = item.sentimentValue;
+            stock.tenDayAverage = item.tenDayAverage;
+            stock.percentChange = item.percentChange;
+            stock.name = item.companyName || stock.name;
+            stock.lastTen = item.lastTen || [];
+          }
+        });
+      } catch (err) {
+        console.error('Failed to load all stock sentiments:', err);
+        throw err;
+      }
     },
 
     async loadFollowedStocks() {
-        if (!this.userEmail) return;
-        try {
-            const symbolsResponse = await fetch(`${this.base_url}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
-            if (!symbolsResponse.ok) throw new Error(`Could not fetch followed symbols: ${symbolsResponse.status}`);
-            const followedSymbols = await symbolsResponse.json();
+      if (!this.userEmail) return;
+      try {
+        const symbolsResponse = await fetch(`${this.base_url}/api/getFollowedStocks?email=${encodeURIComponent(this.userEmail)}`);
+        if (!symbolsResponse.ok) throw new Error(`Could not fetch followed symbols: ${symbolsResponse.status}`);
+        const followedSymbols = await symbolsResponse.json();
 
-            // MERGE STEP: Use the master `this.stocks` data we already fetched
-            this.followedStocks = followedSymbols.map(symbol => {
-                const stockData = this.stocks.find(s => s.symbol === symbol);
-                return this.formatStockData(symbol, stockData);
-            });
-        } catch (error) {
-            console.error("Failed to process followed stocks:", error);
-            this.loadingError = `Failed to load followed stocks. ${error.message}`;
-            // Don't rethrow here, so the rest of the page can still render
-        }
+        // MERGE STEP: Use the master `this.stocks` data we already fetched
+        this.followedStocks = followedSymbols.map(symbol => {
+          const stockData = this.stocks.find(s => s.symbol === symbol);
+          return this.formatStockData(symbol, stockData);
+        });
+      } catch (error) {
+        console.error("Failed to process followed stocks:", error);
+        this.loadingError = `Failed to load followed stocks. ${error.message}`;
+        // Don't rethrow here, so the rest of the page can still render
+      }
     },
 
     formatStockData(symbol, stockData) {
-        // Helper to create a consistent stock object for the `followedStocks` array
-        if (stockData) {
-            return {
-                symbol: stockData.symbol,
-                name: stockData.name,
-                sentimentValue: stockData.dailySentiment,
-                lastTen: stockData.lastTen || [],
-            };
-        }
-        // Fallback if data isn't in the master list for some reason
-        return { symbol, name: 'N/A', sentimentValue: null, lastTen: [] };
+      // Helper to create a consistent stock object for the `followedStocks` array
+      if (stockData) {
+        return {
+          symbol: stockData.symbol,
+          name: stockData.name,
+          sentimentValue: stockData.dailySentiment,
+          lastTen: stockData.lastTen || [],
+        };
+      }
+      // Fallback if data isn't in the master list for some reason
+      return { symbol, name: 'N/A', sentimentValue: null, lastTen: [] };
     },
 
     // --- USER INTERACTION METHODS ---
-    
+
     isStockFollowed(symbol) {
       return this.followedStocks.some(stock => stock.symbol === symbol);
     },
-    
+
     async addStockFromAll(symbol) {
       await this.addStock(symbol);
     },
@@ -591,53 +622,53 @@ export default {
     },
 
     async addStock(symbol) {
-        if (window.event) window.event.stopPropagation();
-        this.addStockError = null;
-        if (!symbol) return;
+      if (window.event) window.event.stopPropagation();
+      this.addStockError = null;
+      if (!symbol) return;
 
-        if (!this.userEmail) {
-            this.addStockError = 'Please log in to follow stocks.';
-            return;
-        }
+      if (!this.userEmail) {
+        this.addStockError = 'Please log in to follow stocks.';
+        return;
+      }
 
-        const stockExists = this.stocks.some(s => s.symbol === symbol);
-        if (!stockExists) {
-            this.addStockError = `${symbol} is not a valid stock symbol.`;
-            return;
-        }
+      const stockExists = this.stocks.some(s => s.symbol === symbol);
+      if (!stockExists) {
+        this.addStockError = `${symbol} is not a valid stock symbol.`;
+        return;
+      }
 
-        if (this.isStockFollowed(symbol)) {
-            this.addStockError = `${symbol} is already followed.`;
-            return;
-        }
-        
-        this.searchQuery = '';
-        this.showSuggestions = false;
-        
-        // Optimistic Update
-        const stockToAdd = this.stocks.find(s => s.symbol === symbol);
-        if (stockToAdd) {
-            this.followedStocks.push(this.formatStockData(symbol, stockToAdd));
-        }
+      if (this.isStockFollowed(symbol)) {
+        this.addStockError = `${symbol} is already followed.`;
+        return;
+      }
 
-        // API call in background
-        try {
-            this.isAddingStock = true;
-            const response = await fetch(`${this.base_url}/api/followStock`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
-            });
-            if (!response.ok) throw new Error(`Server responded with ${response.status}`);
-        } catch (error) {
-            this.addStockError = `Error following stock: ${error.message}`;
-            // Rollback on failure
-            this.followedStocks = this.followedStocks.filter(s => s.symbol !== symbol);
-            alert(`Failed to follow ${symbol}. Please try again.`);
-        } finally {
-            this.isAddingStock = false;
-        }
+      this.searchQuery = '';
+      this.showSuggestions = false;
+
+      // Optimistic Update
+      const stockToAdd = this.stocks.find(s => s.symbol === symbol);
+      if (stockToAdd) {
+        this.followedStocks.push(this.formatStockData(symbol, stockToAdd));
+      }
+
+      // API call in background
+      try {
+        this.isAddingStock = true;
+        const response = await fetch(`${this.base_url}/api/followStock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: this.userEmail, stockSymbol: symbol })
+        });
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+      } catch (error) {
+        this.addStockError = `Error following stock: ${error.message}`;
+        // Rollback on failure
+        this.followedStocks = this.followedStocks.filter(s => s.symbol !== symbol);
+        alert(`Failed to follow ${symbol}. Please try again.`);
+      } finally {
+        this.isAddingStock = false;
+      }
     },
 
     async removeStock(symbol) {
@@ -666,9 +697,9 @@ export default {
         alert(`Error unfollowing ${symbol}: ${error.message}`);
       }
     },
-    
+
     // --- UI and Navigation Methods ---
-    
+
     onInputChange() {
       this.addStockError = null;
       this.showSuggestions = true;
@@ -713,15 +744,15 @@ export default {
         this.$router.push('/login');
       }
     },
-    goToFollowingPage() { 
-      this.$router.push(`/following`); 
-      this.closeAllDropdowns(); 
+    goToFollowingPage() {
+      this.$router.push(`/following`);
+      this.closeAllDropdowns();
     },
-    goToStockDetail(symbol) { 
-      this.$router.push(`/stock/${symbol}`); 
+    goToStockDetail(symbol) {
+      this.$router.push(`/stock/${symbol}`);
     },
-    sentimentClass(value) { 
-      return value >= 0 ? 'text-green-600' : 'text-red-600'; 
+    sentimentClass(value) {
+      return value >= 0 ? 'text-green-600' : 'text-red-600';
     },
   }
 };
