@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./frontend # Path to your frontend Dockerfile
-          platforms: linux/amd64,linux/arm64 # Specify both x86 (amd64) and ARM (arm64)
+          platforms: linux/arm64 # Specify both x86 (amd64) and ARM (arm64)
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/stockifyai-frontend:latest
           # Optional: add more specific tags like: ghcr.io/${{ github.repository_owner }}/stockifyai-frontend:${{ github.sha }}
@@ -46,7 +46,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./backend # Path to your backend Dockerfile
-          platforms: linux/amd64,linux/arm64 # Specify both x86 (amd64) and ARM (arm64)
+          platforms: linux/arm64 # Specify both x86 (amd64) and ARM (arm64)
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/stockifyai-backend:latest
           # Optional: add more specific tags like: ghcr.io/${{ github.repository_owner }}/stockifyai-backend:${{ github.sha }}
