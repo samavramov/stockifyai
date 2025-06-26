@@ -127,7 +127,6 @@
         <tr class="md:hidden">
           <th class="p-4 flex-shrink-0 mr-4 w-24 text-left font-semibold text-sm text-gray-600">Stock</th>
           <th class="p-4 flex-grow text-right font-semibold text-sm text-gray-600">Sentiment</th>
-          <th class="p-4 flex-grow text-center font-semibold text-sm text-gray-600">Average</th>
           <th class="p-4 flex-grow text-center font-semibold text-sm text-gray-600">Change</th>
           <th class="p-4 flex-shrink-0 w-10 text-center">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 inline-block">
@@ -181,12 +180,6 @@
             <div class="text-sm font-semibold" :class="sentimentClass(stock.dailySentiment)">
               {{ stock.dailySentiment != null ? stock.dailySentiment.toFixed(2) : '—' }}
             </div>
-          </td>
-          <td class="md:hidden p-4 text-center">
-            <div v-if="stock.tenDayAverage != null" :class="stock.tenDayAverage >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
-              {{ stock.tenDayAverage.toFixed(2) }}
-            </div>
-            <div v-else class="text-sm text-gray-400">—</div>
           </td>
           <td class="md:hidden p-4 text-center">
             <div v-if="stock.percentChange != null" :class="stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'" class="text-sm font-semibold">
@@ -281,7 +274,7 @@
             </div>
             <div class="lg:col-span-2">
               <div class="bg-white rounded-xl p-6 shadow">
-                <h2 class="text-xl font-bold mb-4">Followed Stocks - 10 Day Sentiment Trends</h2>
+                <h2 class="text-xl font-bold mb-4">Sentiment Trends for Followed Stocks</h2>
                 <apexchart type="line" height="400" :options="chartOptions" :series="chartSeries" />
               </div>
             </div>
