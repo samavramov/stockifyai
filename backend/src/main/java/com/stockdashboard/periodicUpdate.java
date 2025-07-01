@@ -49,14 +49,16 @@ public class periodicUpdate {
     }
     public static String[] getSymbols() {
         return new String[] {
-                "AAPL", "AMD", "AMZN", "AVGO", "BA", "COIN", "DIS", "GME", "GOOGL", "INTC",
+                "AAPL"   
+                /* ,"AMD", "AMZN", "AVGO", "BA", "COIN", "DIS", "GME", "GOOGL", "INTC",
                 "LCID", "META", "MSFT", "MU", "NFLX", "NVDA", "ORCL", "PLTR", "PYPL", "QCOM",
-                "RBLX", "SHOP", "SNAP", "SOFI", "SPOT", "TSLA", "UBER", "WBD", "ZOOM"
+                "RBLX", "SHOP", "SNAP", "SOFI", "SPOT", "TSLA", "UBER", "WBD", "ZOOM"*/
         };
     }
     public static String[] getCompanies() {
         return new String[] {
-                "Apple Inc.", "Advanced Micro Devices", "Amazon.com Inc.", "Broadcom Inc.", "Boeing Company",
+                "Apple Inc."      
+                /* ,"Advanced Micro Devices", "Amazon.com Inc.", "Broadcom Inc.", "Boeing Company",
                 "Coinbase Global Inc.", "Walt Disney Co.", "GameStop Corp.", "Alphabet Inc.", "Intel Corporation",
                 "Lucid Group Inc.", "Meta Platforms Inc.", "Microsoft Corporation", "Micron Technology Inc.",
                 "Netflix Inc.",
@@ -64,7 +66,11 @@ public class periodicUpdate {
                 "Qualcomm Incorporated",
                 "Roblox Corporation", "Shopify Inc.", "Snapchat Inc.", "SoFi Technologies Inc.",
                 "Spotify Technology SA",
-                "Tesla Inc.", "Uber Technologies Inc.", "Warner Bros. Discovery Inc.", "Zoom Video Communications"
+                "Tesla Inc.", "Uber Technologies Inc.", "Warner Bros. Discovery Inc.", "Zoom Video Communications"*/
         };
+    }
+    public static void main(String[] args){
+        updateDB();
+        System.out.println("Updated DB");
     }
 }

@@ -72,4 +72,10 @@ public class aquireURL {
         }
         return urls;
     }
+    public static void main(String[] args) {
+         System.out.println("System TimeZone: " + java.time.ZoneId.systemDefault());
+        String today = LocalDate.now().toString();
+        System.out.println("Using date for API call: " + today);
+        System.out.println(getURLs("Apple Inc").toString());
+    }
 }

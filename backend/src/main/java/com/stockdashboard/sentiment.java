@@ -1,6 +1,8 @@
 package com.stockdashboard;
+
 import java.util.Date;
 import java.util.ArrayList;
+
 public class sentiment {
     public String stockSymbol;
     public String companyName;
@@ -15,7 +17,8 @@ public class sentiment {
     public String about;
     public ArrayList<Double> lastTen;
 
-    public sentiment(String stockSymbol,String companyName, double sentimentValue, Date sentimentTimestamp, String url1, String url2, String url3, String llmAnalysis) {
+    public sentiment(String stockSymbol, String companyName, double sentimentValue, Date sentimentTimestamp,
+            String url1, String url2, String url3, String llmAnalysis) {
         this.stockSymbol = stockSymbol;
         this.companyName = companyName;
         this.sentimentValue = sentimentValue;
@@ -25,6 +28,7 @@ public class sentiment {
         this.url3 = url3;
         this.llmAnalysis = llmAnalysis;
     }
+
     @Override
     public String toString() {
         return "Sentiment{" +
@@ -38,4 +42,13 @@ public class sentiment {
                 ", llmAnalysis='" + llmAnalysis + '\'' +
                 '}';
     }
+    /*
+     * {
+     * "overall_sentiment_score": 0.85,
+     * "sentiment_magnitude": 0.9,
+     * "financial_event_type": "Product Launch",
+     * "outlook_type": "Positive",
+     * "management_sentiment": 0.7
+     * }
+     */
 }

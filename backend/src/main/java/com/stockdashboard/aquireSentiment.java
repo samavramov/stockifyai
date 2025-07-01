@@ -1,9 +1,11 @@
 package com.stockdashboard;
 import io.github.ollama4j.OllamaAPI;
+import io.github.ollama4j.exceptions.OllamaBaseException;
 import io.github.ollama4j.models.response.OllamaResult;
 import io.github.ollama4j.utils.OptionsBuilder;
 import io.github.ollama4j.utils.PromptBuilder;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -59,18 +61,17 @@ public class aquireSentiment {
         return sb.toString();
     }
     private static double getValidSentimentScore(OllamaAPI ollamaAPI, String prompt, String model, int maxAttempts) {
+        System.out.println(model + " model selected for sentiment analysis.");
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                OllamaResult result = ollamaAPI.generate(model, prompt, false, new OptionsBuilder().build());
-                String raw = result.getResponse().trim();
-
-                double score = Double.parseDouble(raw);
-                return score;
-            } catch (NumberFormatException e) {
-                System.err.println("⚠️ Attempt " + attempt + " failed: Response not a valid number.");
-            } catch (Exception e) {
-                System.err.println("❌ Ollama call failed on attempt " + attempt + ": " + e.getMessage());
-                break;
+            try{
+            OllamaResult result = ollamaAPI.generate(model, prompt, false, new OptionsBuilder().build());
+            
+            String raw = result.getResponse().trim();
+            System.out.println("Attempt " + attempt + ": " + raw);    
+            double score = Double.parseDouble(raw);
+            return score;
+            }catch (Exception e) {
+                System.err.println("❌ Attempt " + attempt + " failed: " + e.getMessage());
             }
         }
         System.err.println("❌ Failed to get a valid sentiment score after " + maxAttempts + " attempts.");
@@ -81,8 +82,10 @@ public class aquireSentiment {
         String jsonResponse = fetchHttpGet(diffbotUrl);
         JSONObject json = new JSONObject(jsonResponse);
         String articleText = json.getJSONArray("objects").getJSONObject(0).getString("text");
-        OllamaAPI ollamaAPI = new OllamaAPI();
+        String host = "http://localhost:11434/";
+        OllamaAPI ollamaAPI = new OllamaAPI(host);
         ollamaAPI.setVerbose(false);
+        ollamaAPI.setRequestTimeoutSeconds(45);
         PromptBuilder promptBuilder = new PromptBuilder()
                 .addLine("You are sentiment analysis machine that analyzes articles in plain text.")
                 .addLine("Given a question, answer ONLY with one singular decimal representing a sentiment.")
