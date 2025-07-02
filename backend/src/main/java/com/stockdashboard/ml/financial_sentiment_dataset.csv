@@ -1,0 +1,2 @@
+sentiment_magnitude,financial_event_type,outlook_type,stock_market_reaction,supply_chain_impact,company_volatility,overall_sentiment_score
+0.2,Regulatory,Negative,No Reaction Mentioned,Supply Chain Neutral/No Impact,Increased Volatility,-0.4
