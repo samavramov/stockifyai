@@ -2,9 +2,10 @@ import google.generativeai as genai
 import pandas as pd
 import json
 import time
+import os # Import the os module
 
 # --- Configuration ---
-
+GEMINI_API_KEY = gt# Make sure to replace with your real key
 # Configure the genai library with your API key
 genai.configure(api_key=GEMINI_API_KEY)
 
@@ -26,7 +27,7 @@ You are a fast financial data extractor. Analyze the provided article and return
 The required formats are:
 - "financial_event_type": A string from ["Earnings Report", "Product Launch", "Analyst Note", "Regulatory", "Merger/Acquisition", "General News"].
 - "outlook_type": A string from ["Positive", "Negative", "Neutral"].
-- "stock_market_reaction": A string from ["Positive Reaction", "Negative Reaction", "Mixed Reaction", "No Reaction Mentioned"].
+- "stock_market_reaction": A string from ["Positive Reaction", "Negative Reaction", "No Reaction Mentioned"].
 - "supply_chain_impact": A string from ["Supply Chain Positive", "Supply Chain Negative", "Supply Chain Neutral/No Impact"].
 - "company_volatility": A string from ["Increased Volatility", "Decreased Volatility", "Stable Volatility"].
 - "sentiment_magnitude": A float from 0.0 to 1.0. This should be based on the sentiment of the article as well as the above traits
@@ -79,10 +80,17 @@ for i, text in enumerate(article_texts):
 
     except Exception as e:
         print(f"  !! ERROR processing article {i+1}: {e}")
+
 df = pd.DataFrame(all_data_records)
-df.to_csv('financial_sentiment_dataset.csv', index=False)
+
+# --- MODIFIED: Append to CSV if file exists, else create with header ---
+csv_file_path = 'financial_sentiment_dataset.csv'
+if os.path.exists(csv_file_path):
+    # If the file exists, append without writing the header
+    df.to_csv(csv_file_path, mode='a', header=False, index=False)
+else:
+    # If the file doesn't exist, create it with the header
+    df.to_csv(csv_file_path, mode='w', header=True, index=False)
 
 print("\nData generation complete! ✅")
-print(f"Dataset with {len(df)} record(s) saved to financial_sentiment_dataset.csv")
-
-
+print(f"Dataset with {len(df)} record(s) saved to {csv_file_path}")
