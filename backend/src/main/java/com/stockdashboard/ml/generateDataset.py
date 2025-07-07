@@ -2,25 +2,19 @@ import google.generativeai as genai
 import pandas as pd
 import json
 import time
-import os # Import the os module
+import os 
 
-# --- Configuration ---
-GEMINI_API_KEY = gt# Make sure to replace with your real key
-# Configure the genai library with your API key
+GEMINI_API_KEY = '' 
 genai.configure(api_key=GEMINI_API_KEY)
 
 
-# --- NEW: Load Articles from File ---
 try:
     with open('articles.txt', 'r', encoding='utf-8') as f:
-        # .strip() removes leading/trailing whitespace from each line
-        # The list comprehension ignores any blank lines in your file
         article_texts = [line.strip() for line in f if line.strip()]
 except FileNotFoundError:
     print("Error: 'articles.txt' not found. Please create the file and add article text to it.")
     exit()
 
-# --- Prompt Templates (No Changes) ---
 features_prompt = """
 You are a fast financial data extractor. Analyze the provided article and return a clean JSON object containing EXACTLY these six attributes: "sentiment_magnitude", "financial_event_type", "outlook_type", "stock_market_reaction", "supply_chain_impact", "company_volatility".
 
@@ -50,8 +44,6 @@ ARTICLE TEXT:
 {article_text}
 ---
 """
-
-# --- Main Automation Script (No other changes needed) ---
 flashModel = genai.GenerativeModel('gemini-2.5-flash')
 proModel = genai.GenerativeModel('gemini-2.5-pro')
 all_data_records = []
@@ -62,35 +54,21 @@ for i, text in enumerate(article_texts):
     print(f"Processing article {i+1}...")
     try:
         flash_response = flashModel.generate_content(features_prompt.format(article_text=text))
-        
-        # --- THIS IS THE FIX ---
-        # 1. Clean the string to remove the markdown block
         cleaned_json_string = flash_response.text.strip().replace('```json', '').replace('```', '')
-        
-        # 2. Parse the now-clean JSON string
         features_data = json.loads(cleaned_json_string)
-        # --- END FIX ---
-
         pro_response = proModel.generate_content(score_prompt.format(article_text=text))
         score_data = float(pro_response.text.strip())
-
         features_data['overall_sentiment_score'] = score_data
         all_data_records.append(features_data)
         time.sleep(2)
-
     except Exception as e:
         print(f"  !! ERROR processing article {i+1}: {e}")
-
 df = pd.DataFrame(all_data_records)
-
-# --- MODIFIED: Append to CSV if file exists, else create with header ---
 csv_file_path = 'financial_sentiment_dataset.csv'
 if os.path.exists(csv_file_path):
-    # If the file exists, append without writing the header
     df.to_csv(csv_file_path, mode='a', header=False, index=False)
 else:
-    # If the file doesn't exist, create it with the header
     df.to_csv(csv_file_path, mode='w', header=True, index=False)
 
-print("\nData generation complete! ✅")
+print("\nData generation complete!")
 print(f"Dataset with {len(df)} record(s) saved to {csv_file_path}")
