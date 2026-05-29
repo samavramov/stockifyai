@@ -4,7 +4,7 @@ StockifyAI is a full-stack equity intelligence dashboard for analyzing S&P 500 t
 
 The project lets a user select companies, run an on-demand analysis, ingest recent article coverage, extract sentiment with Diffbot, refresh historical price data, and compare sentiment trends against price movement and next-close forecasts.
 
-<p align="center">
+<p>
   <img src="docs/dashboard.png" width="49%" alt="StockifyAI dashboard overview">
 </p>
 
