@@ -6,7 +6,6 @@ The project lets a user select companies, run an on-demand analysis, ingest rece
 
 <p align="center">
   <img src="docs/dashboard.png" width="49%" alt="StockifyAI dashboard overview">
-  <img src="docs/company-detail.png" width="49%" alt="StockifyAI company detail view">
 </p>
 
 ## What It Does
